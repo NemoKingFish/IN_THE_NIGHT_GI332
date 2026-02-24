@@ -17,11 +17,6 @@ public class RandomFloor : MonoBehaviour
             rend.material.color = Color.red; // เปลี่ยนเป็นสีแดง
         }
 
-        // Update is called once per frame
-        void Update()
-        {
-
-        }
     }
 
 }
