@@ -1263,10 +1263,11 @@ GameObject:
   - component: {fileID: 2390280185109688595}
   - component: {fileID: 1572116608710965945}
   - component: {fileID: 8046359366727514139}
-  - component: {fileID: 2723151390439168078}
+  - component: {fileID: 2920535873831539041}
   - component: {fileID: 7333345611410943113}
   - component: {fileID: 935604647907237631}
   - component: {fileID: 6952509540167704651}
+  - component: {fileID: 6875514536749361947}
   m_Layer: 8
   m_Name: Network_PlayerArmature
   m_TagString: Player
@@ -1490,19 +1491,19 @@ MonoBehaviour:
   m_DefaultActionMap: Player
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
---- !u!114 &2723151390439168078
+--- !u!114 &2920535873831539041
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5873215872436585876}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 3058181170
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 160170565
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -1617,6 +1618,23 @@ MonoBehaviour:
       Synchronize: 1
       ParameterType: 1
   AnimatorParametersExpanded: 0
+--- !u!114 &6875514536749361947
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5873215872436585876}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aed30873c7e06d345af51dc65437cb60, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerCarInteractor
+  ShowTopMostFoldoutHeaderGroup: 1
+  interactKey: 101
+  verticalAxis: Vertical
+  horizontalAxis: Horizontal
+  movementToDisable: {fileID: 2390280185109688595}
 --- !u!1 &5878588583881065624
 GameObject:
   m_ObjectHideFlags: 0
@@ -1763,6 +1781,8 @@ SkinnedMeshRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -1786,9 +1806,11 @@ SkinnedMeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   serializedVersion: 2
   m_Quality: 0
   m_UpdateWhenOffscreen: 0
