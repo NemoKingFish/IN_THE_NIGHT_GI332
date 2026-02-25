@@ -1,6 +1,6 @@
 ﻿using Unity.Netcode;
 using UnityEngine;
-
+/*
 public class NetworkCarController : NetworkBehaviour
 {
     [Header("Seats (0 = Driver)")]
@@ -194,4 +194,4 @@ public class NetworkCarController : NetworkBehaviour
 
     // helpers
     public bool IsMyDriverSeat(ulong clientId) => seat0.Value == (long)clientId;
-}
+} */
