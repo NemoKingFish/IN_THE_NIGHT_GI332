@@ -11,4 +11,8 @@ public class RoomManager : MonoBehaviour
     [SerializeField] private int passScore;
     [SerializeField] private int passScoreThreshold;
 
+    private void Start()
+    {
+        
+    }
 }

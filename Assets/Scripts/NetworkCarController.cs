@@ -76,7 +76,7 @@ public class NetworkCarController : NetworkBehaviour
 
     public bool IsStopped()
     {
-        Vector3 v = rb.velocity; v.y = 0;
+        Vector3 v = rb.linearVelocity; v.y = 0;
         return v.magnitude <= stopSpeedToExit;
     }
 
@@ -87,7 +87,7 @@ public class NetworkCarController : NetworkBehaviour
         long driverId = seat0.Value;
         if (driverId == -1) return;
 
-        Vector3 flatVel = rb.velocity; flatVel.y = 0;
+        Vector3 flatVel = rb.linearVelocity; flatVel.y = 0;
         if (flatVel.magnitude < maxSpeed ||
             Mathf.Sign(throttleInput) != Mathf.Sign(Vector3.Dot(transform.forward, flatVel.normalized)))
         {
