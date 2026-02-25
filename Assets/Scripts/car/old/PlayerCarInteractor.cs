@@ -27,6 +27,12 @@ public class PlayerCarInteractor : NetworkBehaviour
     {
         if (!IsOwner) return;
 
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            Debug.Log($"E pressed | IsOwner={IsOwner} | IsClient={IsClient} | IsServer={IsServer}");
+            Debug.Log("Is Car Spawned = " + nearbyCar.NetworkObject.IsSpawned);
+        }
+
         if (Input.GetKeyDown(interactKey))
         {
             if (!inCar)
