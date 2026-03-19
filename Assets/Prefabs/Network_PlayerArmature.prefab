@@ -1270,6 +1270,8 @@ GameObject:
   - component: {fileID: 935604647907237631}
   - component: {fileID: 6952509540167704651}
   - component: {fileID: 3096348229828625138}
+  - component: {fileID: 731120177802255672}
+  - component: {fileID: 159378991306310420}
   - component: {fileID: 3851274206103279342}
   m_Layer: 8
   m_Name: Network_PlayerArmature
@@ -1408,7 +1410,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5873215872436585876}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: aed30873c7e06d345af51dc65437cb60, type: 3}
   m_Name: 
@@ -1644,7 +1646,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5873215872436585876}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f95d2ef6db34fe9489dc701c48c510ea, type: 3}
   m_Name: 
@@ -1655,6 +1657,35 @@ MonoBehaviour:
   brakeKey: 32
   disableWhenSeated:
   - {fileID: 2390280185109688595}
+--- !u!114 &731120177802255672
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5873215872436585876}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 624aaf2f11e98e048be594af3d9b6588, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerTrainInteractor
+  ShowTopMostFoldoutHeaderGroup: 1
+  seatState: {fileID: 0}
+--- !u!114 &159378991306310420
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5873215872436585876}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c566f925c7dc7f343bba76221dfe9c4e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NetworkPlayerSeatState
+  ShowTopMostFoldoutHeaderGroup: 1
+  thirdPersonController: {fileID: 2390280185109688595}
+  characterController: {fileID: 2837698849448655932}
 --- !u!54 &3851274206103279342
 Rigidbody:
   m_ObjectHideFlags: 0
