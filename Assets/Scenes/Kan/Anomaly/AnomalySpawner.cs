@@ -1,7 +1,6 @@
-using System;
 using UnityEngine;
 
-public class AnomalyManager : MonoBehaviour
+public class AnomalySpawner : MonoBehaviour
 {
     [Header("Anomaly")]
     [SerializeField] private GameObject anomalyObjectSpawn;
