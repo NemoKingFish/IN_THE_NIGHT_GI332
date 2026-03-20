@@ -1,29 +1,51 @@
+using Unity.Netcode;
 using UnityEngine;
 
-public class AnomalySpawner : MonoBehaviour
+public class AnomalySpawnPoint : NetworkBehaviour
 {
-    [Header("Anomaly")]
-    [SerializeField] private GameObject anomalyObjectSpawn;
-    [SerializeField] private GameObject normalObjectSpawn;
-    [SerializeField][Range(0,100)] private float chanceAnomalySpawn;
-    public bool isSpawn;
-    [SerializeField] private int ID;
-    [SerializeField] private string anomalyName;
+    [Header("Prefabs")]
+    [SerializeField] private GameObject normalPrefab;
+    [SerializeField] private GameObject anomalyPrefab;
 
-    private void Start()
+    [Header("Spawn Chance")]
+    [SerializeField, Range(0f, 100f)] private float anomalyChance;
+
+    [Header("Debug")]
+    [SerializeField] private bool spawnedAsAnomaly;
+
+    private NetworkObject currentSpawnedObject;
+
+    public override void OnNetworkSpawn()
     {
-        float randomValue = UnityEngine.Random.Range(0f, 100f);
-        if(chanceAnomalySpawn >= randomValue)
+        // ให้ Server เท่านั้นที่ตัดสินใจสุ่ม
+        if (!IsServer) return;
+
+        SpawnObject();
+    }
+
+    private void SpawnObject()
+    {
+        if (currentSpawnedObject != null) return;
+
+        float randomValue = Random.Range(0f, 100f);
+        bool isAnomaly = randomValue < anomalyChance;
+
+        spawnedAsAnomaly = isAnomaly;
+
+        GameObject prefabToSpawn = isAnomaly ? anomalyPrefab : normalPrefab;
+
+        GameObject obj = Instantiate(prefabToSpawn, transform.position, transform.rotation);
+
+        currentSpawnedObject = obj.GetComponent<NetworkObject>();
+        if (currentSpawnedObject == null)
         {
-            Instantiate(anomalyObjectSpawn, transform.position, Quaternion.identity);
-            isSpawn = true;
-            Debug.Log($"Anomaly ID: {ID}/Anomaly Name: {anomalyName}/Anomaly chance: {chanceAnomalySpawn}/This round value: {randomValue}/Spawned: {isSpawn}");
+            Debug.LogError($"Prefab {prefabToSpawn.name} ไม่มี NetworkObject");
+            Destroy(obj);
+            return;
         }
-        else
-        {
-            Instantiate(normalObjectSpawn, transform.position, Quaternion.identity);
-            isSpawn = false;
-            Debug.Log($"Anomaly ID: {ID}/Anomaly Name: {anomalyName}/Anomaly chance: {chanceAnomalySpawn}/This round value: {randomValue}/Spawned: {isSpawn}");
-        }
+
+        currentSpawnedObject.Spawn(true);
+
+        Debug.Log($"[Server] Spawned {(isAnomaly ? "ANOMALY" : "NORMAL")} at {transform.position}, Roll = {randomValue}");
     }
 }
