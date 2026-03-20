@@ -15,7 +15,7 @@ public class PlayerTrainInteractor : NetworkBehaviour
         }
     }
 
-    private void Update()
+    private void FixedUpdate()
     {
         if (!IsOwner) return;
 
@@ -25,18 +25,33 @@ public class PlayerTrainInteractor : NetworkBehaviour
 
             if (seatState != null && seatState.IsSeated && seatState.CurrentTrain != null)
             {
+                if (!seatState.CurrentTrain.IsSpawned)
+                {
+                    Debug.LogWarning("[PLAYER] CurrentTrain exists but is not spawned yet");
+                    return;
+                }
+
                 Debug.Log("[PLAYER] Request Exit");
                 seatState.CurrentTrain.RequestExitServerRpc();
+                return;
             }
-            else if (nearbyTrain != null)
+
+            if (nearbyTrain == null)
             {
-                Debug.Log("[PLAYER] Request Enter");
-                nearbyTrain.RequestEnterServerRpc();
+                Debug.LogWarning("[PLAYER] No nearby train");
+                return;
             }
-            else
+
+            Debug.Log($"[PLAYER] nearbyTrain name={nearbyTrain.name} | IsSpawned={nearbyTrain.IsSpawned}");
+
+            if (!nearbyTrain.IsSpawned)
             {
-                Debug.Log("[PLAYER] No nearby train");
+                Debug.LogWarning("[PLAYER] Train found, but NetworkObject is not spawned yet");
+                return;
             }
+
+            Debug.Log("[PLAYER] Request Enter");
+            nearbyTrain.RequestEnterServerRpc();
         }
     }
 

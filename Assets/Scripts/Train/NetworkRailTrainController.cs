@@ -24,6 +24,9 @@ public class NetworkRailTrainController : NetworkBehaviour
     [SerializeField] private float brakePower = 10f;
     [SerializeField] private float idleDeceleration = 2f;
 
+    [Header("Orientation Offset")]
+    [SerializeField] private Vector3 modelRotationOffsetEuler = new Vector3(0f, 0f, 0f);
+
     [Header("Start Positions")]
     [SerializeField] private bool usePlacedPositionAsStart = true;
     [SerializeField] private int pathSearchSamples = 200;
@@ -94,6 +97,7 @@ public class NetworkRailTrainController : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        Debug.Log($"[TRAIN] OnNetworkSpawn called | name={name} | IsSpawned={IsSpawned} | IsServer={IsServer}");
         if (IsServer)
         {
             if (seatOwners.Count == 0)
@@ -262,6 +266,9 @@ public class NetworkRailTrainController : NetworkBehaviour
         Vector3 worldPos = railPath.transform.TransformPoint(localPos);
         Quaternion worldRot = railPath.transform.rotation * localRot;
 
+        Quaternion modelOffset = Quaternion.Euler(modelRotationOffsetEuler);
+        worldRot = worldRot * modelOffset;
+
         if (rotateToPath)
         {
             transform.SetPositionAndRotation(worldPos, worldRot);
@@ -269,11 +276,6 @@ public class NetworkRailTrainController : NetworkBehaviour
         else
         {
             transform.position = worldPos;
-        }
-
-        if (showDebugLog)
-        {
-            Debug.Log($"[TRAIN] ApplyPoseFromPath -> {transform.position}");
         }
     }
 
