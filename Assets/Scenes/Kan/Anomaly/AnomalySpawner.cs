@@ -1,4 +1,5 @@
 using Unity.Netcode;
+using Unity.Collections;
 using UnityEngine;
 
 public class AnomalySpawnPoint : NetworkBehaviour
@@ -7,45 +8,108 @@ public class AnomalySpawnPoint : NetworkBehaviour
     [SerializeField] private GameObject normalPrefab;
     [SerializeField] private GameObject anomalyPrefab;
 
-    [Header("Spawn Chance")]
-    [SerializeField, Range(0f, 100f)] private float anomalyChance;
+    [Header("Anomaly Info")]
+    [SerializeField] private int anomalyID;
+    [SerializeField] private string anomalyName;
 
-    [Header("Debug")]
-    [SerializeField] private bool spawnedAsAnomaly;
+    [Header("Spawn Chance")]
+    [SerializeField, Range(0f, 100f)] private float anomalyChance = 30f;
+
+    public NetworkVariable<bool> isAnomalySpawned = new NetworkVariable<bool>(
+        false,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
+    public NetworkVariable<int> currentAnomalyID = new NetworkVariable<int>(
+        -1,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
+    public NetworkVariable<FixedString64Bytes> currentAnomalyName = new NetworkVariable<FixedString64Bytes>(
+        "",
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
 
     private NetworkObject currentSpawnedObject;
 
     public override void OnNetworkSpawn()
     {
-        // ให้ Server เท่านั้นที่ตัดสินใจสุ่ม
         if (!IsServer) return;
 
-        SpawnObject();
+        if (currentSpawnedObject == null)
+            SpawnNormal();
     }
 
-    private void SpawnObject()
+    public void SpawnNormal()
     {
-        if (currentSpawnedObject != null) return;
+        if (!IsServer) return;
+        ReplaceSpawnedObject(normalPrefab, false);
+    }
+
+    public void RollAndSpawn()
+    {
+        if (!IsServer) return;
 
         float randomValue = Random.Range(0f, 100f);
-        bool isAnomaly = randomValue < anomalyChance;
+        bool spawnAnomaly = randomValue < anomalyChance;
 
-        spawnedAsAnomaly = isAnomaly;
+        GameObject prefabToSpawn = spawnAnomaly ? anomalyPrefab : normalPrefab;
+        ReplaceSpawnedObject(prefabToSpawn, spawnAnomaly);
+    }
 
-        GameObject prefabToSpawn = isAnomaly ? anomalyPrefab : normalPrefab;
+    private void ReplaceSpawnedObject(GameObject prefabToSpawn, bool asAnomaly)
+    {
+        if (currentSpawnedObject != null)
+        {
+            if (currentSpawnedObject.IsSpawned)
+                currentSpawnedObject.Despawn(true);
+            else
+                Destroy(currentSpawnedObject.gameObject);
+
+            currentSpawnedObject = null;
+        }
 
         GameObject obj = Instantiate(prefabToSpawn, transform.position, transform.rotation);
-
         currentSpawnedObject = obj.GetComponent<NetworkObject>();
+
         if (currentSpawnedObject == null)
         {
-            Debug.LogError($"Prefab {prefabToSpawn.name} ไม่มี NetworkObject");
+            Debug.LogError($"Prefab {prefabToSpawn.name} has no NetworkObject");
             Destroy(obj);
             return;
         }
 
-        currentSpawnedObject.Spawn(true);
+        if (asAnomaly)
+        {
+            isAnomalySpawned.Value = true;
+            currentAnomalyID.Value = anomalyID;
+            currentAnomalyName.Value = anomalyName;
+        }
+        else
+        {
+            isAnomalySpawned.Value = false;
+            currentAnomalyID.Value = -1;
+            currentAnomalyName.Value = "Normal";
+        }
 
-        Debug.Log($"[Server] Spawned {(isAnomaly ? "ANOMALY" : "NORMAL")} at {transform.position}, Roll = {randomValue}");
+        currentSpawnedObject.Spawn(true);
+    }
+
+    public bool IsAnomaly()
+    {
+        return isAnomalySpawned.Value;
+    }
+
+    public int GetAnomalyID()
+    {
+        return anomalyID;
+    }
+
+    public string GetAnomalyName()
+    {
+        return anomalyName;
     }
 }
