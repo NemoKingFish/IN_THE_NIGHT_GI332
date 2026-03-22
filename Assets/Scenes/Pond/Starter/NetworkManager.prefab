@@ -99,7 +99,7 @@ MonoBehaviour:
   m_DisconnectTimeoutMS: 30000
   ConnectionData:
     Address: 127.0.0.1
-    Port: 65535
+    Port: 11111
     ServerListenAddress: 127.0.0.1
     ClientBindPort: 0
   DebugSimulator:

@@ -1263,13 +1263,11 @@ GameObject:
   - component: {fileID: 3364885887155040709}
   - component: {fileID: 2390280185109688595}
   - component: {fileID: 2920535873831539041}
-  - component: {fileID: 465366767551273141}
   - component: {fileID: 1572116608710965945}
   - component: {fileID: 8046359366727514139}
   - component: {fileID: 7333345611410943113}
   - component: {fileID: 935604647907237631}
   - component: {fileID: 6952509540167704651}
-  - component: {fileID: 3096348229828625138}
   - component: {fileID: 731120177802255672}
   - component: {fileID: 159378991306310420}
   - component: {fileID: 3851274206103279342}
@@ -1403,23 +1401,6 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
---- !u!114 &465366767551273141
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5873215872436585876}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aed30873c7e06d345af51dc65437cb60, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerCarInteractor
-  ShowTopMostFoldoutHeaderGroup: 1
-  interactKey: 101
-  verticalAxis: Vertical
-  horizontalAxis: Horizontal
-  movementToDisable: {fileID: 2390280185109688595}
 --- !u!114 &1572116608710965945
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1639,24 +1620,6 @@ MonoBehaviour:
       Synchronize: 1
       ParameterType: 1
   AnimatorParametersExpanded: 0
---- !u!114 &3096348229828625138
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5873215872436585876}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f95d2ef6db34fe9489dc701c48c510ea, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerCarInteractorSimple
-  ShowTopMostFoldoutHeaderGroup: 1
-  enterKey: 101
-  exitKey: 102
-  brakeKey: 32
-  disableWhenSeated:
-  - {fileID: 2390280185109688595}
 --- !u!114 &731120177802255672
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2680,7 +2643,7 @@ Camera:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8330910202835606216}
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 2
   m_ClearFlags: 1
   m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
