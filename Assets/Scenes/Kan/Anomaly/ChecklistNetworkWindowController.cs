@@ -1,0 +1,114 @@
+using Unity.Netcode;
+using UnityEngine;
+
+public class ChecklistNetworkWindowController : MonoBehaviour
+{
+    [SerializeField] private GameObject checklistWindow;
+    [SerializeField] private GameObject openChecklistButton;
+
+    private void Start()
+    {
+        ApplyDisconnectedState();
+
+        if (NetworkManager.Singleton == null)
+        {
+            Debug.LogWarning("NetworkManager.Singleton not found");
+            return;
+        }
+
+        NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
+        NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
+
+        RefreshUI();
+    }
+
+    private void OnDestroy()
+    {
+        if (NetworkManager.Singleton == null) return;
+
+        NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
+        NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
+    }
+
+    private void OnClientConnected(ulong clientId)
+    {
+        RefreshUI();
+    }
+
+    private void OnClientDisconnected(ulong clientId)
+    {
+        RefreshUI();
+    }
+
+    private bool IsConnectedToSession()
+    {
+        if (NetworkManager.Singleton == null) return false;
+
+        // จะนับว่าใช้งานได้เมื่อเป็น host หรือ client ที่เชื่อมต่อแล้ว
+        return NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsConnectedClient;
+    }
+
+    private void RefreshUI()
+    {
+        bool connected = IsConnectedToSession();
+
+        if (!connected)
+        {
+            ApplyDisconnectedState();
+            return;
+        }
+
+        // ถ้าเชื่อมต่อแล้ว แต่หน้าต่างยังไม่เปิด ให้โชว์ปุ่ม Open
+        if (checklistWindow != null && checklistWindow.activeSelf)
+        {
+            if (openChecklistButton != null)
+                openChecklistButton.SetActive(false);
+        }
+        else
+        {
+            if (openChecklistButton != null)
+                openChecklistButton.SetActive(true);
+        }
+    }
+
+    private void ApplyDisconnectedState()
+    {
+        if (checklistWindow != null)
+            checklistWindow.SetActive(false);
+
+        if (openChecklistButton != null)
+            openChecklistButton.SetActive(false);
+    }
+
+    public void OpenWindow()
+    {
+        if (!IsConnectedToSession()) return;
+
+        if (checklistWindow != null)
+            checklistWindow.SetActive(true);
+
+        if (openChecklistButton != null)
+            openChecklistButton.SetActive(false);
+    }
+
+    public void CloseWindow()
+    {
+        if (checklistWindow != null)
+            checklistWindow.SetActive(false);
+
+        if (openChecklistButton != null)
+            openChecklistButton.SetActive(IsConnectedToSession());
+    }
+
+    public void ToggleWindow()
+    {
+        if (!IsConnectedToSession()) return;
+        if (checklistWindow == null) return;
+
+        bool willOpen = !checklistWindow.activeSelf;
+        checklistWindow.SetActive(willOpen);
+
+        if (openChecklistButton != null)
+            openChecklistButton.SetActive(!willOpen);
+    }
+}
