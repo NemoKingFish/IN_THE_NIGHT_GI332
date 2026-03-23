@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -13,8 +15,11 @@ public class ChecklistManager : NetworkBehaviour
     [Header("Anomaly Group From Hierarchy")]
     [SerializeField] private Transform anomalyGroup;
 
-    [Header("Auto Filled")]
+    [Header("Auto Filled Spawn Points")]
     [SerializeField] private AnomalySpawnPoint[] anomalyPoints;
+
+    [Header("Auto Filled Type List")]
+    [SerializeField] private AnomalyType[] checklistTypes;
 
     public NetworkVariable<ulong> checkedMask = new NetworkVariable<ulong>(
         0,
@@ -32,18 +37,24 @@ public class ChecklistManager : NetworkBehaviour
 
     private void Awake()
     {
-        RefreshAnomalyPoints();
+        RefreshAnomalyData();
     }
 
 #if UNITY_EDITOR
     private void OnValidate()
     {
-        RefreshAnomalyPoints();
+        RefreshAnomalyData();
     }
 #endif
 
-    [ContextMenu("Refresh Anomaly Points")]
-    public void RefreshAnomalyPoints()
+    [ContextMenu("Refresh Anomaly Data")]
+    public void RefreshAnomalyData()
+    {
+        RefreshAnomalyPoints();
+        RefreshChecklistTypesFromEnum();
+    }
+
+    private void RefreshAnomalyPoints()
     {
         if (anomalyGroup == null)
         {
@@ -54,23 +65,41 @@ public class ChecklistManager : NetworkBehaviour
         anomalyPoints = anomalyGroup.GetComponentsInChildren<AnomalySpawnPoint>(true);
     }
 
-    public int GetItemCount()
+    private void RefreshChecklistTypesFromEnum()
     {
-        return anomalyPoints != null ? anomalyPoints.Length : 0;
+        List<AnomalyType> allTypes = new List<AnomalyType>();
+        AnomalyType[] enumValues = (AnomalyType[])Enum.GetValues(typeof(AnomalyType));
+
+        for (int i = 0; i < enumValues.Length; i++)
+        {
+            if (enumValues[i] == AnomalyType.None)
+                continue;
+
+            allTypes.Add(enumValues[i]);
+        }
+
+        checklistTypes = allTypes.ToArray();
     }
 
-    public AnomalySpawnPoint GetPoint(int index)
+    public int GetItemCount()
     {
-        if (anomalyPoints == null) return null;
-        if (index < 0 || index >= anomalyPoints.Length) return null;
-        return anomalyPoints[index];
+        return checklistTypes != null ? checklistTypes.Length : 0;
     }
 
     public string GetItemName(int index)
     {
-        AnomalySpawnPoint point = GetPoint(index);
-        if (point == null) return $"Anomaly {index}";
-        return point.GetAnomalyName();
+        if (checklistTypes == null || index < 0 || index >= checklistTypes.Length)
+            return $"AnomalyType {index}";
+
+        return checklistTypes[index].ToString();
+    }
+
+    public AnomalyType GetChecklistType(int index)
+    {
+        if (checklistTypes == null || index < 0 || index >= checklistTypes.Length)
+            return AnomalyType.None;
+
+        return checklistTypes[index];
     }
 
     public bool IsItemChecked(int index)
@@ -105,13 +134,27 @@ public class ChecklistManager : NetworkBehaviour
     {
         correctMask = 0;
 
-        if (anomalyPoints == null) return;
+        if (checklistTypes == null || anomalyPoints == null) return;
 
-        for (int i = 0; i < anomalyPoints.Length; i++)
+        for (int typeIndex = 0; typeIndex < checklistTypes.Length; typeIndex++)
         {
-            if (anomalyPoints[i] != null && anomalyPoints[i].IsAnomaly())
+            AnomalyType checklistType = checklistTypes[typeIndex];
+            bool typeExistsThisRound = false;
+
+            for (int pointIndex = 0; pointIndex < anomalyPoints.Length; pointIndex++)
             {
-                correctMask |= (1UL << i);
+                if (anomalyPoints[pointIndex] == null) continue;
+
+                if (anomalyPoints[pointIndex].GetCurrentAnomalyType() == checklistType)
+                {
+                    typeExistsThisRound = true;
+                    break;
+                }
+            }
+
+            if (typeExistsThisRound)
+            {
+                correctMask |= (1UL << typeIndex);
             }
         }
     }
@@ -129,8 +172,8 @@ public class ChecklistManager : NetworkBehaviour
     public void ToggleChecklistItemServerRpc(int index, bool isChecked)
     {
         if (matchResult.Value != (int)MatchResult.Playing) return;
-        if (anomalyPoints == null) return;
-        if (index < 0 || index >= anomalyPoints.Length) return;
+        if (checklistTypes == null) return;
+        if (index < 0 || index >= checklistTypes.Length) return;
 
         ulong bit = 1UL << index;
         ulong current = checkedMask.Value;
@@ -141,5 +184,12 @@ public class ChecklistManager : NetworkBehaviour
             current &= ~bit;
 
         checkedMask.Value = current;
+    }
+
+    public AnomalySpawnPoint GetPoint(int index)
+    {
+        if (anomalyPoints == null) return null;
+        if (index < 0 || index >= anomalyPoints.Length) return null;
+        return anomalyPoints[index];
     }
 }

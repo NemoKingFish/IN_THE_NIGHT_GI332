@@ -11,15 +11,10 @@ public class AnomalySpawnPoint : NetworkBehaviour
     [Header("Anomaly Info")]
     [SerializeField] private int anomalyID;
     [SerializeField] private string anomalyName;
+    [SerializeField] private AnomalyType assignedAnomalyType = AnomalyType.None;
 
     [Header("Spawn Chance")]
     [SerializeField, Range(0f, 100f)] private float anomalyChance = 30f;
-
-    public NetworkVariable<bool> isAnomalySpawned = new NetworkVariable<bool>(
-        false,
-        NetworkVariableReadPermission.Everyone,
-        NetworkVariableWritePermission.Server
-    );
 
     public NetworkVariable<int> currentAnomalyID = new NetworkVariable<int>(
         -1,
@@ -29,6 +24,12 @@ public class AnomalySpawnPoint : NetworkBehaviour
 
     public NetworkVariable<FixedString64Bytes> currentAnomalyName = new NetworkVariable<FixedString64Bytes>(
         "",
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
+    public NetworkVariable<int> currentAnomalyType = new NetworkVariable<int>(
+        (int)AnomalyType.None,
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Server
     );
@@ -84,23 +85,33 @@ public class AnomalySpawnPoint : NetworkBehaviour
 
         if (asAnomaly)
         {
-            isAnomalySpawned.Value = true;
             currentAnomalyID.Value = anomalyID;
             currentAnomalyName.Value = anomalyName;
+            currentAnomalyType.Value = (int)assignedAnomalyType;
         }
         else
         {
-            isAnomalySpawned.Value = false;
             currentAnomalyID.Value = -1;
             currentAnomalyName.Value = "Normal";
+            currentAnomalyType.Value = (int)AnomalyType.None;
         }
 
         currentSpawnedObject.Spawn(true);
     }
 
-    public bool IsAnomaly()
+    public bool HasAnomaly()
     {
-        return isAnomalySpawned.Value;
+        return GetCurrentAnomalyType() != AnomalyType.None;
+    }
+
+    public AnomalyType GetCurrentAnomalyType()
+    {
+        return (AnomalyType)currentAnomalyType.Value;
+    }
+
+    public AnomalyType GetAssignedAnomalyType()
+    {
+        return assignedAnomalyType;
     }
 
     public int GetAnomalyID()
@@ -111,5 +122,10 @@ public class AnomalySpawnPoint : NetworkBehaviour
     public string GetAnomalyName()
     {
         return anomalyName;
+    }
+
+    public string GetAnomalyTypeName()
+    {
+        return assignedAnomalyType.ToString();
     }
 }

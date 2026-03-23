@@ -1,47 +1,86 @@
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class ChecklistUI : MonoBehaviour
 {
-    [Header("References")]
+    [Header("Managers")]
     [SerializeField] private ChecklistManager checklistManager;
     [SerializeField] private GameRoundManager gameRoundManager;
 
+    [Header("UI References")]
     [SerializeField] private GameObject checklistWindow;
     [SerializeField] private Transform contentParent;
     [SerializeField] private ChecklistItemUI itemPrefab;
-
     [SerializeField] private Button submitButton;
+    [SerializeField] private Button closeButton;
     [SerializeField] private TextMeshProUGUI resultText;
 
-    private readonly List<ChecklistItemUI> spawnedItems = new List<ChecklistItemUI>();
+    [Header("Input")]
+    [SerializeField] private KeyCode toggleKey = KeyCode.Tab;
 
-    private void Start()
+    private readonly List<ChecklistItemUI> spawnedItems = new List<ChecklistItemUI>();
+    private bool initialized;
+
+    private IEnumerator Start()
     {
         if (checklistWindow != null)
             checklistWindow.SetActive(false);
+
+        // ก่อน Host / Join: เมาส์ไม่ล็อก
+        UnlockCursor();
+
+        if (NetworkManager.Singleton != null)
+        {
+            NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
+            NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
+        }
+
+        while (checklistManager == null || gameRoundManager == null)
+        {
+            if (checklistManager == null)
+                checklistManager = FindFirstObjectByType<ChecklistManager>();
+
+            if (gameRoundManager == null)
+                gameRoundManager = FindFirstObjectByType<GameRoundManager>();
+
+            yield return null;
+        }
 
         BuildUI();
 
         if (submitButton != null)
             submitButton.onClick.AddListener(OnClickSubmit);
 
-        if (checklistManager != null)
-        {
-            checklistManager.checkedMask.OnValueChanged += OnCheckedMaskChanged;
-            checklistManager.matchResult.OnValueChanged += OnMatchResultChanged;
-        }
+        if (closeButton != null)
+            closeButton.onClick.AddListener(CloseWindow);
 
-        if (gameRoundManager != null)
-        {
-            gameRoundManager.gamePhase.OnValueChanged += OnGamePhaseChanged;
-        }
+        checklistManager.checkedMask.OnValueChanged += OnCheckedMaskChanged;
+        checklistManager.matchResult.OnValueChanged += OnMatchResultChanged;
+        gameRoundManager.gamePhase.OnValueChanged += OnGamePhaseChanged;
 
         RefreshAllItems();
         RefreshUIState();
         RefreshResultText();
+        RefreshCursorState();
+
+        initialized = true;
+    }
+
+    private void Update()
+    {
+        if (!initialized) return;
+
+        // ยังไม่ Host / Join -> ห้ามเปิด Tab
+        if (!IsConnectedToSession()) return;
+
+        if (Input.GetKeyDown(toggleKey))
+        {
+            ToggleWindow();
+        }
     }
 
     private void OnDestroy()
@@ -59,25 +98,62 @@ public class ChecklistUI : MonoBehaviour
 
         if (submitButton != null)
             submitButton.onClick.RemoveListener(OnClickSubmit);
+
+        if (closeButton != null)
+            closeButton.onClick.RemoveListener(CloseWindow);
+
+        if (NetworkManager.Singleton != null)
+        {
+            NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
+            NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
+        }
+
+        UnlockCursor();
+    }
+
+    private void OnClientConnected(ulong clientId)
+    {
+        RefreshCursorState();
+    }
+
+    private void OnClientDisconnected(ulong clientId)
+    {
+        if (checklistWindow != null)
+            checklistWindow.SetActive(false);
+
+        RefreshCursorState();
+    }
+
+    private bool IsConnectedToSession()
+    {
+        if (NetworkManager.Singleton == null) return false;
+
+        return NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsConnectedClient;
+    }
+
+    private void RefreshCursorState()
+    {
+        // ก่อน Host / Join -> เมาส์ไม่ล็อก
+        if (!IsConnectedToSession())
+        {
+            UnlockCursor();
+            return;
+        }
+
+        // หลัง Host / Join:
+        // ถ้าเมนูเปิด -> ไม่ล็อก
+        // ถ้าเมนูปิด -> ล็อก
+        if (checklistWindow != null && checklistWindow.activeSelf)
+            UnlockCursor();
+        else
+            LockCursor();
     }
 
     private void BuildUI()
     {
-        if (contentParent == null)
+        if (contentParent == null || itemPrefab == null || checklistManager == null)
         {
-            Debug.LogError("ChecklistUI: Content Parent is missing.");
-            return;
-        }
-
-        if (itemPrefab == null)
-        {
-            Debug.LogError("ChecklistUI: Item Prefab is missing.");
-            return;
-        }
-
-        if (checklistManager == null)
-        {
-            Debug.LogError("ChecklistUI: ChecklistManager is missing.");
+            Debug.LogError("ChecklistUI: Missing references.");
             return;
         }
 
@@ -124,12 +200,8 @@ public class ChecklistUI : MonoBehaviour
 
     private void RefreshResultText()
     {
-        if (resultText == null) return;
-        if (checklistManager == null || gameRoundManager == null)
-        {
-            resultText.text = "Missing References";
+        if (resultText == null || checklistManager == null || gameRoundManager == null)
             return;
-        }
 
         var phase = (GameRoundManager.GamePhase)gameRoundManager.gamePhase.Value;
         var result = (ChecklistManager.MatchResult)checklistManager.matchResult.Value;
@@ -161,11 +233,9 @@ public class ChecklistUI : MonoBehaviour
 
     private bool CanInteractChecklist()
     {
-        if (checklistManager == null || gameRoundManager == null)
-            return false;
-
-        if (!checklistManager.IsPlaying())
-            return false;
+        if (!IsConnectedToSession()) return false;
+        if (checklistManager == null || gameRoundManager == null) return false;
+        if (!checklistManager.IsPlaying()) return false;
 
         return gameRoundManager.IsInvestigationPhase();
     }
@@ -205,19 +275,42 @@ public class ChecklistUI : MonoBehaviour
 
     public void OpenWindow()
     {
-        if (checklistWindow != null)
-            checklistWindow.SetActive(true);
+        if (!IsConnectedToSession()) return;
+        if (checklistWindow == null) return;
+
+        checklistWindow.SetActive(true);
+        UnlockCursor();
+        RefreshUIState();
     }
 
     public void CloseWindow()
     {
-        if (checklistWindow != null)
-            checklistWindow.SetActive(false);
+        if (checklistWindow == null) return;
+
+        checklistWindow.SetActive(false);
+        RefreshCursorState();
     }
 
     public void ToggleWindow()
     {
+        if (!IsConnectedToSession()) return;
         if (checklistWindow == null) return;
-        checklistWindow.SetActive(!checklistWindow.activeSelf);
+
+        if (checklistWindow.activeSelf)
+            CloseWindow();
+        else
+            OpenWindow();
+    }
+
+    private void UnlockCursor()
+    {
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+    }
+
+    private void LockCursor()
+    {
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 }
