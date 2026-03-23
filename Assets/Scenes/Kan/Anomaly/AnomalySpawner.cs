@@ -16,6 +16,10 @@ public class AnomalySpawnPoint : NetworkBehaviour
     [Header("Spawn Chance")]
     [SerializeField, Range(0f, 100f)] private float anomalyChance = 30f;
 
+    [Header("Prefab Pivot")]
+    [SerializeField] private bool usePrefabPivot = true;
+    [SerializeField] private string prefabPivotName = "SpawnPivot";
+
     public NetworkVariable<int> currentAnomalyID = new NetworkVariable<int>(
         -1,
         NetworkVariableReadPermission.Everyone,
@@ -73,7 +77,7 @@ public class AnomalySpawnPoint : NetworkBehaviour
             currentSpawnedObject = null;
         }
 
-        GameObject obj = Instantiate(prefabToSpawn, transform.position, transform.rotation);
+        GameObject obj = InstantiatePrefabAtSpawnPoint(prefabToSpawn);
         currentSpawnedObject = obj.GetComponent<NetworkObject>();
 
         if (currentSpawnedObject == null)
@@ -97,6 +101,52 @@ public class AnomalySpawnPoint : NetworkBehaviour
         }
 
         currentSpawnedObject.Spawn(true);
+    }
+
+    private GameObject InstantiatePrefabAtSpawnPoint(GameObject prefab)
+    {
+        GameObject obj = Instantiate(prefab);
+
+        if (!usePrefabPivot)
+        {
+            obj.transform.SetPositionAndRotation(transform.position, transform.rotation);
+            return obj;
+        }
+
+        Transform pivot = FindChildRecursive(obj.transform, prefabPivotName);
+
+        if (pivot == null)
+        {
+            Debug.LogWarning(
+                $"Prefab {prefab.name} does not have a child named '{prefabPivotName}'. Using root transform instead.",
+                obj
+            );
+
+            obj.transform.SetPositionAndRotation(transform.position, transform.rotation);
+            return obj;
+        }
+
+        // ทำให้ pivot ของ prefab มาตรงกับ AnomalySpawnPoint
+        Quaternion rootRotation = transform.rotation * Quaternion.Inverse(pivot.localRotation);
+        Vector3 rootPosition = transform.position - (rootRotation * pivot.localPosition);
+
+        obj.transform.SetPositionAndRotation(rootPosition, rootRotation);
+        return obj;
+    }
+
+    private Transform FindChildRecursive(Transform parent, string childName)
+    {
+        if (parent.name == childName)
+            return parent;
+
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            Transform result = FindChildRecursive(parent.GetChild(i), childName);
+            if (result != null)
+                return result;
+        }
+
+        return null;
     }
 
     public bool HasAnomaly()

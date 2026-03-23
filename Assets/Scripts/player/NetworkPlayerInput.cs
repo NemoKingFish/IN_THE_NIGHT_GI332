@@ -38,14 +38,26 @@ public class NetworkPlayerInput : NetworkBehaviour
         LookYaw = playerYawRoot.eulerAngles.y;
         pitch = NormalizeAngle(pitchRoot.localEulerAngles.x);
 
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        // ไม่บังคับล็อกเมาส์ตรงนี้แล้ว
+        // ให้ ChecklistUI หรือ UI ตัวอื่นเป็นคนจัดการเอง
     }
 
     private void Update()
     {
         if (!IsOwner)
             return;
+
+        // ถ้าเมาส์ไม่ล็อก แปลว่ากำลังเปิดเมนูอยู่
+        // ไม่ให้หมุนกล้องและไม่ให้ขยับตัว
+        if (Cursor.lockState != CursorLockMode.Locked)
+        {
+            MoveInput = Vector2.zero;
+            JumpPressed = false;
+            SprintHeld = false;
+
+            SubmitInputServerRpc(MoveInput, JumpPressed, SprintHeld, LookYaw);
+            return;
+        }
 
         ReadLook();
         ReadMove();
@@ -58,11 +70,9 @@ public class NetworkPlayerInput : NetworkBehaviour
         float mouseX = Input.GetAxisRaw("Mouse X") * sensitivity * Time.deltaTime;
         float mouseY = Input.GetAxisRaw("Mouse Y") * sensitivity * Time.deltaTime;
 
-        // Yaw: local ตอบสนองทันที
         LookYaw += mouseX;
         playerYawRoot.rotation = Quaternion.Euler(0f, LookYaw, 0f);
 
-        // Pitch: local only
         pitch -= mouseY;
         pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
         pitchRoot.localRotation = Quaternion.Euler(pitch, 0f, 0f);

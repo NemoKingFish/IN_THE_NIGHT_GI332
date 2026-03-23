@@ -3119,9 +3119,13 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 8894406703760092131, guid: 6fcafd7d2c3fbd343b774a9afdae2d6b, type: 3}
     - target: {fileID: -5884573764316770937, guid: 582f818317b2dc94e83dc4375aff5cf7, type: 3}
+      propertyPath: anomalyChance
+      value: 90
+      objectReference: {fileID: 0}
+    - target: {fileID: -5884573764316770937, guid: 582f818317b2dc94e83dc4375aff5cf7, type: 3}
       propertyPath: anomalyPrefab
       value: 
-      objectReference: {fileID: 7852489608970489576, guid: 6a1b24ab22faf9046a21be7f89783dee, type: 3}
+      objectReference: {fileID: 6041312445928639754, guid: c1c3c3ecb7d8ddc4c9e8e32ed759b7b5, type: 3}
     - target: {fileID: -5884573764316770937, guid: 582f818317b2dc94e83dc4375aff5cf7, type: 3}
       propertyPath: assignedAnomalyType
       value: 2
@@ -3225,9 +3229,13 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 8894406703760092131, guid: 6fcafd7d2c3fbd343b774a9afdae2d6b, type: 3}
     - target: {fileID: -5884573764316770937, guid: 582f818317b2dc94e83dc4375aff5cf7, type: 3}
+      propertyPath: anomalyChance
+      value: 90
+      objectReference: {fileID: 0}
+    - target: {fileID: -5884573764316770937, guid: 582f818317b2dc94e83dc4375aff5cf7, type: 3}
       propertyPath: anomalyPrefab
       value: 
-      objectReference: {fileID: 7852489608970489576, guid: 6a1b24ab22faf9046a21be7f89783dee, type: 3}
+      objectReference: {fileID: 6041312445928639754, guid: 719850eee01eeb04f8d704fffbda4d9f, type: 3}
     - target: {fileID: -5884573764316770937, guid: 582f818317b2dc94e83dc4375aff5cf7, type: 3}
       propertyPath: assignedAnomalyType
       value: 2
