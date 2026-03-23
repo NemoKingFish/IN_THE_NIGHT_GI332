@@ -1130,6 +1130,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 6713005983927357940, guid: 36a8a3b0606784abda50784fd2ec0721, type: 3}
   m_PrefabInstance: {fileID: 589338788}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &607039718 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2451761389428555794, guid: eb629056f3ced3f4da2b16cbcf7cb4f6, type: 3}
+  m_PrefabInstance: {fileID: 879019799}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &696785747
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1339,7 +1344,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 798180086}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.22095664, y: -0.000000021737472, z: 0.0000000049247615, w: 0.9752837}
+  m_LocalRotation: {x: 0.22095664, y: -0.000000021737472, z: 0.0000000049247615, w: 0.9752836}
   m_LocalPosition: {x: 0, y: 8.86, z: -4.5599995}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -1512,10 +1517,14 @@ PrefabInstance:
       propertyPath: m_TagString
       value: Untagged
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 1944852537631804689, guid: eb629056f3ced3f4da2b16cbcf7cb4f6, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2451761389428555794, guid: eb629056f3ced3f4da2b16cbcf7cb4f6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1657990557}
   m_SourcePrefab: {fileID: 100100000, guid: eb629056f3ced3f4da2b16cbcf7cb4f6, type: 3}
 --- !u!1001 &892005978
 PrefabInstance:
@@ -2550,6 +2559,19 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 1380001111214347, guid: eb629056f3ced3f4da2b16cbcf7cb4f6, type: 3}
   m_PrefabInstance: {fileID: 879019799}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1657990557
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 607039718}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36d1163fa822e8b418a0a603ec078d5c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineHardLockToTarget
+  Damping: 0
 --- !u!1001 &1727293052
 PrefabInstance:
   m_ObjectHideFlags: 0
