@@ -10,32 +10,39 @@ public class NetworkHeadBob : NetworkBehaviour
     [Header("Bob")]
     [SerializeField] private float bobFrequency = 9f;
     [SerializeField] private float bobAmplitudeY = 0.045f;
-    [SerializeField] private float bobAmplitudeX = 0.02f;
     [SerializeField] private float bobSmoothSpeed = 10f;
-
-    [Header("Tilt")]
-    [SerializeField] private float tiltAmount = 1.5f;
-    [SerializeField] private float tiltSmoothSpeed = 10f;
-    [SerializeField] private float maxTilt = 3f;
 
     private Vector3 defaultLocalPos;
     private Quaternion defaultLocalRot;
     private float bobTimer;
 
-    private void Start()
+    public override void OnNetworkSpawn()
     {
+        if (!IsOwner)
+        {
+            enabled = false;
+            return;
+        }
+
         if (bobTarget == null)
             bobTarget = transform;
+
+        if (motor == null)
+            motor = GetComponentInParent<NetworkPlayerMotor>();
+
+        if (motor == null)
+        {
+            Debug.LogError("NetworkHeadBob: NetworkPlayerMotor not found.", this);
+            enabled = false;
+            return;
+        }
 
         defaultLocalPos = bobTarget.localPosition;
         defaultLocalRot = bobTarget.localRotation;
     }
 
-    private void Update()
+    private void LateUpdate()
     {
-        if (!IsOwner)
-            return;
-
         if (motor == null)
             return;
 
@@ -46,10 +53,8 @@ public class NetworkHeadBob : NetworkBehaviour
         bool isMoving = speed > 0.1f;
         bool grounded = motor.IsGrounded;
 
-        float moveX = Input.GetAxisRaw("Horizontal");
-
         HandleHeadBob(isMoving, grounded, speed);
-        HandleTilt(moveX);
+        ResetRotation();
     }
 
     private void HandleHeadBob(bool isMoving, bool grounded, float speed)
@@ -58,10 +63,8 @@ public class NetworkHeadBob : NetworkBehaviour
         {
             bobTimer += Time.deltaTime * bobFrequency * Mathf.Clamp(speed / 4f, 0.75f, 1.75f);
 
-            float x = Mathf.Cos(bobTimer * 0.5f) * bobAmplitudeX;
             float y = Mathf.Sin(bobTimer) * bobAmplitudeY;
-
-            Vector3 target = defaultLocalPos + new Vector3(x, y, 0f);
+            Vector3 target = defaultLocalPos + new Vector3(0f, y, 0f);
 
             bobTarget.localPosition = Vector3.Lerp(
                 bobTarget.localPosition,
@@ -81,15 +84,12 @@ public class NetworkHeadBob : NetworkBehaviour
         }
     }
 
-    private void HandleTilt(float moveX)
+    private void ResetRotation()
     {
-        float zTilt = Mathf.Clamp(-moveX * tiltAmount, -maxTilt, maxTilt);
-        Quaternion targetRot = defaultLocalRot * Quaternion.Euler(0f, 0f, zTilt);
-
         bobTarget.localRotation = Quaternion.Slerp(
             bobTarget.localRotation,
-            targetRot,
-            tiltSmoothSpeed * Time.deltaTime
+            defaultLocalRot,
+            bobSmoothSpeed * Time.deltaTime
         );
     }
 }

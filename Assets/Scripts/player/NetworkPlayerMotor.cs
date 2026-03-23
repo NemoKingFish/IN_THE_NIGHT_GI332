@@ -5,13 +5,14 @@ using UnityEngine;
 [RequireComponent(typeof(NetworkPlayerInput))]
 public class NetworkPlayerMotor : NetworkBehaviour
 {
+    [Header("References")]
+    [SerializeField] private Transform playerYawRoot;
+
     [Header("Move")]
     [SerializeField] private float walkSpeed = 4f;
     [SerializeField] private float sprintSpeed = 7f;
     [SerializeField] private float acceleration = 12f;
     [SerializeField] private float airControl = 0.4f;
-
-    public float VerticalVelocity => verticalVelocity;
 
     [Header("Jump / Gravity")]
     [SerializeField] private float gravity = -25f;
@@ -24,12 +25,16 @@ public class NetworkPlayerMotor : NetworkBehaviour
     private float verticalVelocity;
 
     public Vector3 HorizontalVelocity => horizontalVelocity;
+    public float VerticalVelocity => verticalVelocity;
     public bool IsGrounded => controller != null && controller.isGrounded;
 
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
         netInput = GetComponent<NetworkPlayerInput>();
+
+        if (playerYawRoot == null)
+            playerYawRoot = transform;
     }
 
     private void Update()
@@ -42,11 +47,15 @@ public class NetworkPlayerMotor : NetworkBehaviour
 
     private void TickMovement(float dt)
     {
+        ApplyServerYaw();
+
         Vector2 input = netInput.MoveInput;
         bool sprint = netInput.SprintHeld;
         bool jump = netInput.JumpPressed;
 
-        Vector3 moveDir = (transform.right * input.x + transform.forward * input.y);
+        Vector3 moveDir = playerYawRoot.right * input.x + playerYawRoot.forward * input.y;
+        moveDir.y = 0f;
+
         if (moveDir.sqrMagnitude > 1f)
             moveDir.Normalize();
 
@@ -80,8 +89,13 @@ public class NetworkPlayerMotor : NetworkBehaviour
         controller.Move(finalMove * dt);
     }
 
+    private void ApplyServerYaw()
+    {
+        playerYawRoot.rotation = Quaternion.Euler(0f, netInput.LookYaw, 0f);
+    }
+
     public void OnFootstep(AnimationEvent evt)
     {
-        //กัน error 
+        // กัน error animation event
     }
 }
