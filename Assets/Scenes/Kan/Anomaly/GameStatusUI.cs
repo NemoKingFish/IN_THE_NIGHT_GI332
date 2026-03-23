@@ -10,6 +10,13 @@ public class GameStatusUI : MonoBehaviour
 
     private void Start()
     {
+        if (gameRoundManager == null)
+        {
+            Debug.LogError("GameStatusUI: GameRoundManager is missing.", this);
+            enabled = false;
+            return;
+        }
+
         RefreshUI();
 
         gameRoundManager.currentScore.OnValueChanged += OnScoreChanged;
