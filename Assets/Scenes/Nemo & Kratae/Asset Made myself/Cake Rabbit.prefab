@@ -143,6 +143,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 3631892426834398709}
   - {fileID: 7720031931289435764}
   - {fileID: 4455030188505162919}
   - {fileID: 5813501886056864864}
@@ -194,7 +195,6 @@ Transform:
   - {fileID: 6087552578246666153}
   - {fileID: 4388669796476603852}
   - {fileID: 6525296136936923047}
-  - {fileID: 3631892426834398709}
   - {fileID: 4628817092677628582}
   - {fileID: 4695513856648872434}
   - {fileID: 3845561540698474212}
