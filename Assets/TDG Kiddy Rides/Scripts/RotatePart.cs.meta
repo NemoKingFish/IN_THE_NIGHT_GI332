@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 3ec92ffbb1ee90b479b3f6ee3675c213
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254809
+  packageName: TDG Kiddy Rides
+  packageVersion: 1.0
+  assetPath: Assets/TDG Kiddy Rides/Scripts/RotatePart.cs
+  uploadId: 596561

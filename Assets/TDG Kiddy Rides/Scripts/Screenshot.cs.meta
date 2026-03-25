@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 0b334fcc0f0d7794096c2a5e8d6edf26
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254809
+  packageName: TDG Kiddy Rides
+  packageVersion: 1.0
+  assetPath: Assets/TDG Kiddy Rides/Scripts/Screenshot.cs
+  uploadId: 596561

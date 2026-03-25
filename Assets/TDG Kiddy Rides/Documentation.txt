@@ -1,0 +1,15 @@
+TDG Kiddy Rides
+
+If you enjoy our work, please leave us a review!
+
+This low poly kiddy rides pack includes several animations and scripts as demos for how the rides can move and act.  Use or customize these as needed.
+- LightsFlashing - Swaps materials around for lights (used on fire engine)
+- RotatePart - Rotates a part of the model.  Many of the models have independantly rotatable / movable parts that can be animated.
+- Rotation - Rotates a part of the model that the script is attached to.
+- RotationVariable - Rotates a part of the model with variable speeds
+
+There are several UV sheets which can be used or customized, or the models all work with standard materials.
+
+This pack is completely compatible with all other TDG packs (https://assetstore.unity.com/publishers/71166) in both style and scale, as well as with other popular low poly packs available on the Unity asset store.
+
+If you have any questions or feedback, e-mail theorydigitalgames@gmail.com .

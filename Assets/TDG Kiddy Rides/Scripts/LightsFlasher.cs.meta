@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: a7b527de980ec334c9378713b0653d9f
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254809
+  packageName: TDG Kiddy Rides
+  packageVersion: 1.0
+  assetPath: Assets/TDG Kiddy Rides/Scripts/LightsFlasher.cs
+  uploadId: 596561

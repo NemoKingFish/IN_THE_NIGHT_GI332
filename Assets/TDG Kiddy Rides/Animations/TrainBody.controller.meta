@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 28b240440b5984446909020f11cf8ed2
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 9100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 254809
+  packageName: TDG Kiddy Rides
+  packageVersion: 1.0
+  assetPath: Assets/TDG Kiddy Rides/Animations/TrainBody.controller
+  uploadId: 596561
