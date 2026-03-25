@@ -5,11 +5,12 @@ TagManager:
   serializedVersion: 3
   tags:
   - CinemachineTarget
+  - Fluid
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Start
   - Water
   - UI
   - Button
