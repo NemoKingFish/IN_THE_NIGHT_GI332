@@ -22,6 +22,7 @@ public class GameStatusUI : MonoBehaviour
         gameRoundManager.currentScore.OnValueChanged += OnScoreChanged;
         gameRoundManager.currentRound.OnValueChanged += OnRoundChanged;
         gameRoundManager.gamePhase.OnValueChanged += OnPhaseChanged;
+        gameRoundManager.currentPhaseEndTime.OnValueChanged += OnPhaseEndTimeChanged;
     }
 
     private void OnDestroy()
@@ -31,11 +32,21 @@ public class GameStatusUI : MonoBehaviour
         gameRoundManager.currentScore.OnValueChanged -= OnScoreChanged;
         gameRoundManager.currentRound.OnValueChanged -= OnRoundChanged;
         gameRoundManager.gamePhase.OnValueChanged -= OnPhaseChanged;
+        gameRoundManager.currentPhaseEndTime.OnValueChanged -= OnPhaseEndTimeChanged;
+    }
+
+    private void Update()
+    {
+        if (gameRoundManager != null && gameRoundManager.IsMemorizePhase())
+        {
+            RefreshUI();
+        }
     }
 
     private void OnScoreChanged(int oldValue, int newValue) => RefreshUI();
     private void OnRoundChanged(int oldValue, int newValue) => RefreshUI();
     private void OnPhaseChanged(int oldValue, int newValue) => RefreshUI();
+    private void OnPhaseEndTimeChanged(double oldValue, double newValue) => RefreshUI();
 
     private void RefreshUI()
     {
@@ -52,7 +63,7 @@ public class GameStatusUI : MonoBehaviour
             switch (phase)
             {
                 case GameRoundManager.GamePhase.Memorize:
-                    phaseText.text = "Phase: Memorize";
+                    phaseText.text = $"Phase: Memorize ({gameRoundManager.GetMemorizeSecondsRemaining()})";
                     break;
                 case GameRoundManager.GamePhase.Investigation:
                     phaseText.text = "Phase: Investigation";
