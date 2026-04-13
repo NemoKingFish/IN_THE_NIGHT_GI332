@@ -1,8 +1,7 @@
-using Photon.Pun;
-using Photon.Realtime;
+using Unity.Netcode;
 using UnityEngine;
 
-public class ChecklistNetworkWindowController : MonoBehaviourPunCallbacks
+public class ChecklistNetworkWindowController : MonoBehaviour
 {
     [SerializeField] private GameObject checklistWindow;
     [SerializeField] private GameObject openChecklistButton;
@@ -10,20 +9,43 @@ public class ChecklistNetworkWindowController : MonoBehaviourPunCallbacks
     private void Start()
     {
         ApplyDisconnectedState();
+
+        if (NetworkManager.Singleton == null)
+        {
+            Debug.LogWarning("NetworkManager.Singleton not found");
+            return;
+        }
+
+        NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
+        NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
+
         RefreshUI();
     }
 
-    public override void OnJoinedRoom() => RefreshUI();
-    public override void OnLeftRoom() => RefreshUI();
-    public override void OnPlayerEnteredRoom(Player newPlayer) => RefreshUI();
-    public override void OnPlayerLeftRoom(Player otherPlayer) => RefreshUI();
+    private void OnDestroy()
+    {
+        if (NetworkManager.Singleton == null) return;
+
+        NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
+        NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
+    }
+
+    private void OnClientConnected(ulong clientId)
+    {
+        RefreshUI();
+    }
+
+    private void OnClientDisconnected(ulong clientId)
+    {
+        RefreshUI();
+    }
 
     private bool IsConnectedToSession()
     {
-        return PhotonNetwork.InRoom;
+        if (NetworkManager.Singleton == null) return false;
 
         // จะนับว่าใช้งานได้เมื่อเป็น host หรือ client ที่เชื่อมต่อแล้ว
-
+        return NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsConnectedClient;
     }
 
     private void RefreshUI()

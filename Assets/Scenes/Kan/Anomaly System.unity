@@ -2054,7 +2054,6 @@ GameObject:
   - component: {fileID: 1472700909}
   - component: {fileID: 1472700907}
   - component: {fileID: 1472700908}
-  - component: {fileID: 1472700910}
   m_Layer: 0
   m_Name: GameRoundManager
   m_TagString: Untagged
@@ -2110,32 +2109,6 @@ MonoBehaviour:
     m_InternalValue: 0
   gamePhase:
     m_InternalValue: 0
---- !u!114 &1472700910
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1472700906}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7c0f3ab5d5e8487ea8c5034ef3fc2c11, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PhotonScenePlayerSpawnManager
-  playerPrefab: {fileID: 5873215872436585876, guid: b556bd64d389df74b9ba240aac3412f4, type: 3}
-  primarySpawnPadName: SpawnPad
-  fallbackSpawnPadName: SpawnPoint
-  cameraTargetName: CameraTarget
-  spawnHeightOffset: 0.15
-  moveSpeed: 4.75
-  gravity: -20
-  lookSensitivity: 2.25
-  cameraDistance: 3.75
-  cameraPitchMin: -35
-  cameraPitchMax: 65
-  deactivateSceneMainCamera: 1
-  networkSendRate: 12
-  remoteLerpSpeed: 12
 --- !u!4 &1472700909
 Transform:
   m_ObjectHideFlags: 0

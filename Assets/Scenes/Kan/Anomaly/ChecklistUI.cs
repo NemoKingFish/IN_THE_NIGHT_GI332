@@ -1,11 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
-using Photon.Pun;
 using TMPro;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class ChecklistUI : MonoBehaviourPunCallbacks
+public class ChecklistUI : MonoBehaviour
 {
     [Header("Managers")]
     [SerializeField] private ChecklistManager checklistManager;
@@ -18,11 +18,6 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
     [SerializeField] private Button submitButton;
     [SerializeField] private Button closeButton;
     [SerializeField] private TextMeshProUGUI resultText;
-    [SerializeField] private TextMeshProUGUI titleText;
-    [SerializeField] private TextMeshProUGUI submitButtonText;
-    [SerializeField] private ScrollRect checklistScrollRect;
-    [SerializeField] private Button cancelSubmitButton;
-    [SerializeField] private TextMeshProUGUI cancelSubmitButtonText;
 
     [Header("Input")]
     [SerializeField] private KeyCode toggleKey = KeyCode.Tab;
@@ -38,6 +33,12 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
         // ก่อน Host / Join: เมาส์ไม่ล็อก
         UnlockCursor();
 
+        if (NetworkManager.Singleton != null)
+        {
+            NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
+            NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
+        }
+
         while (checklistManager == null || gameRoundManager == null)
         {
             if (checklistManager == null)
@@ -49,15 +50,10 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
             yield return null;
         }
 
-        ResolveOptionalReferences();
-        ConfigureWindowLayout();
         BuildUI();
 
         if (submitButton != null)
             submitButton.onClick.AddListener(OnClickSubmit);
-
-        if (cancelSubmitButton != null)
-            cancelSubmitButton.onClick.AddListener(OnClickCancelSubmit);
 
         if (closeButton != null)
             closeButton.onClick.AddListener(CloseWindow);
@@ -69,7 +65,6 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
         RefreshAllItems();
         RefreshUIState();
         RefreshResultText();
-        RefreshSubmitPresentation();
         RefreshCursorState();
 
         initialized = true;
@@ -86,9 +81,6 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
         {
             ToggleWindow();
         }
-
-        RefreshResultText();
-        RefreshSubmitPresentation();
     }
 
     private void OnDestroy()
@@ -107,21 +99,24 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
         if (submitButton != null)
             submitButton.onClick.RemoveListener(OnClickSubmit);
 
-        if (cancelSubmitButton != null)
-            cancelSubmitButton.onClick.RemoveListener(OnClickCancelSubmit);
-
         if (closeButton != null)
             closeButton.onClick.RemoveListener(CloseWindow);
+
+        if (NetworkManager.Singleton != null)
+        {
+            NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
+            NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
+        }
+
+        UnlockCursor();
     }
 
-    public override void OnJoinedRoom()
+    private void OnClientConnected(ulong clientId)
     {
         RefreshCursorState();
-        RefreshUIState();
-        RefreshSubmitPresentation();
     }
 
-    public override void OnLeftRoom()
+    private void OnClientDisconnected(ulong clientId)
     {
         if (checklistWindow != null)
             checklistWindow.SetActive(false);
@@ -131,7 +126,9 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
 
     private bool IsConnectedToSession()
     {
-        return PhotonNetwork.InRoom;
+        if (NetworkManager.Singleton == null) return false;
+
+        return NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsConnectedClient;
     }
 
     private void RefreshCursorState()
@@ -150,105 +147,6 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
             UnlockCursor();
         else
             LockCursor();
-    }
-
-    private void ResolveOptionalReferences()
-    {
-        if (checklistWindow != null && titleText == null)
-        {
-            titleText = FindNamedChildComponent<TextMeshProUGUI>(checklistWindow.transform, "TitleText");
-        }
-
-        if (submitButton != null && submitButtonText == null)
-        {
-            submitButtonText = submitButton.GetComponentInChildren<TextMeshProUGUI>(true);
-        }
-
-        if (contentParent != null && checklistScrollRect == null)
-        {
-            checklistScrollRect = contentParent.GetComponentInParent<ScrollRect>();
-        }
-
-        if (cancelSubmitButton == null && submitButton != null)
-        {
-            cancelSubmitButton = CreateCancelButton(submitButton);
-        }
-
-        if (cancelSubmitButton != null && cancelSubmitButtonText == null)
-        {
-            cancelSubmitButtonText = cancelSubmitButton.GetComponentInChildren<TextMeshProUGUI>(true);
-        }
-    }
-
-    private void ConfigureWindowLayout()
-    {
-        if (titleText != null)
-        {
-            titleText.text = "Checklist";
-            titleText.fontSize = 58f;
-            titleText.alignment = TextAlignmentOptions.Center;
-
-            if (titleText.rectTransform != null)
-            {
-                titleText.rectTransform.anchorMin = new Vector2(0f, 1f);
-                titleText.rectTransform.anchorMax = new Vector2(1f, 1f);
-                titleText.rectTransform.pivot = new Vector2(0.5f, 1f);
-            }
-        }
-
-        if (checklistScrollRect != null)
-        {
-            checklistScrollRect.horizontal = false;
-            checklistScrollRect.vertical = true;
-            checklistScrollRect.movementType = ScrollRect.MovementType.Clamped;
-            checklistScrollRect.scrollSensitivity = 28f;
-        }
-
-        if (contentParent is RectTransform contentRect)
-        {
-            contentRect.anchorMin = new Vector2(0f, 1f);
-            contentRect.anchorMax = new Vector2(1f, 1f);
-            contentRect.pivot = new Vector2(0.5f, 1f);
-            contentRect.anchoredPosition = Vector2.zero;
-            contentRect.sizeDelta = new Vector2(0f, contentRect.sizeDelta.y);
-        }
-
-        var layoutGroup = contentParent != null ? contentParent.GetComponent<VerticalLayoutGroup>() : null;
-        if (layoutGroup != null)
-        {
-            layoutGroup.padding.left = 18;
-            layoutGroup.padding.right = 18;
-            layoutGroup.padding.top = 14;
-            layoutGroup.padding.bottom = 14;
-            layoutGroup.spacing = 14f;
-            layoutGroup.childAlignment = TextAnchor.UpperCenter;
-            layoutGroup.childControlWidth = true;
-            layoutGroup.childForceExpandWidth = true;
-            layoutGroup.childForceExpandHeight = false;
-        }
-
-        ConfigureActionButton(submitButton, 74f);
-        ConfigureActionButton(cancelSubmitButton, 18f);
-
-        if (submitButtonText != null)
-        {
-            submitButtonText.fontSize = 24f;
-            submitButtonText.alignment = TextAlignmentOptions.Center;
-            submitButtonText.text = "submit";
-        }
-
-        if (cancelSubmitButtonText != null)
-        {
-            cancelSubmitButtonText.fontSize = 24f;
-            cancelSubmitButtonText.alignment = TextAlignmentOptions.Center;
-            cancelSubmitButtonText.text = "cancel";
-        }
-
-        if (resultText != null)
-        {
-            resultText.fontSize = 34f;
-            resultText.alignment = TextAlignmentOptions.Center;
-        }
     }
 
     private void BuildUI()
@@ -311,15 +209,11 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
         switch (phase)
         {
             case GameRoundManager.GamePhase.Memorize:
-                resultText.text = $"Memorize ({gameRoundManager.GetMemorizeSecondsRemaining()})";
+                resultText.text = "Memorize the room...";
                 break;
 
             case GameRoundManager.GamePhase.Investigation:
-                var submittedCount = gameRoundManager.GetSubmittedPlayerCount();
-                var expectedPlayers = gameRoundManager.GetExpectedSubmitterCount();
-                resultText.text = submittedCount > 0
-                    ? $"wait.... ({submittedCount}/{expectedPlayers})"
-                    : "Choose anomalies";
+                resultText.text = "Find the anomalies.";
                 break;
 
             case GameRoundManager.GamePhase.RoundTransition:
@@ -342,7 +236,6 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
         if (!IsConnectedToSession()) return false;
         if (checklistManager == null || gameRoundManager == null) return false;
         if (!checklistManager.IsPlaying()) return false;
-        if (gameRoundManager.HasLocalPlayerSubmitted()) return false;
 
         return gameRoundManager.IsInvestigationPhase();
     }
@@ -356,14 +249,12 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
     {
         RefreshUIState();
         RefreshResultText();
-        RefreshSubmitPresentation();
     }
 
     private void OnGamePhaseChanged(int oldValue, int newValue)
     {
         RefreshUIState();
         RefreshResultText();
-        RefreshSubmitPresentation();
     }
 
     public void OnToggleChanged(int index, bool value)
@@ -380,17 +271,6 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
         if (gameRoundManager == null) return;
 
         gameRoundManager.SubmitChecklistServerRpc();
-        RefreshUIState();
-        RefreshSubmitPresentation();
-    }
-
-    private void OnClickCancelSubmit()
-    {
-        if (gameRoundManager == null) return;
-
-        gameRoundManager.CancelChecklistSubmission();
-        RefreshUIState();
-        RefreshSubmitPresentation();
     }
 
     public void OpenWindow()
@@ -432,93 +312,5 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
     {
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
-    }
-
-    private void RefreshSubmitPresentation()
-    {
-        if (gameRoundManager == null)
-        {
-            return;
-        }
-
-        if (submitButton != null)
-        {
-            submitButton.interactable = CanInteractChecklist();
-        }
-
-        if (cancelSubmitButton != null)
-        {
-            cancelSubmitButton.gameObject.SetActive(gameRoundManager.IsInvestigationPhase() && gameRoundManager.HasLocalPlayerSubmitted());
-        }
-
-        if (submitButtonText == null)
-        {
-            return;
-        }
-
-        var submittedCount = gameRoundManager.GetSubmittedPlayerCount();
-        var expectedPlayers = gameRoundManager.GetExpectedSubmitterCount();
-        var isWaitingForPlayers = gameRoundManager.IsInvestigationPhase() && gameRoundManager.HasAnyPlayerSubmitted();
-
-        submitButtonText.text = isWaitingForPlayers
-            ? $"wait.... ({submittedCount}/{expectedPlayers})"
-            : "submit";
-
-        if (cancelSubmitButtonText != null)
-        {
-            cancelSubmitButtonText.text = "cancel";
-        }
-    }
-
-    private static T FindNamedChildComponent<T>(Transform root, string childName) where T : Component
-    {
-        if (root == null)
-        {
-            return null;
-        }
-
-        foreach (var child in root.GetComponentsInChildren<Transform>(true))
-        {
-            if (child.name == childName)
-            {
-                return child.GetComponent<T>();
-            }
-        }
-
-        return null;
-    }
-
-    private static void ConfigureActionButton(Button button, float bottomOffset)
-    {
-        if (button == null || button.transform is not RectTransform rectTransform)
-        {
-            return;
-        }
-
-        rectTransform.anchorMin = new Vector2(1f, 0f);
-        rectTransform.anchorMax = new Vector2(1f, 0f);
-        rectTransform.pivot = new Vector2(1f, 0f);
-        rectTransform.anchoredPosition = new Vector2(-28f, bottomOffset);
-        rectTransform.sizeDelta = new Vector2(190f, 48f);
-    }
-
-    private static Button CreateCancelButton(Button submitSourceButton)
-    {
-        if (submitSourceButton == null || submitSourceButton.transform.parent == null)
-        {
-            return null;
-        }
-
-        var cancelObject = Instantiate(submitSourceButton.gameObject, submitSourceButton.transform.parent);
-        cancelObject.name = "CancelSubmitButton";
-        cancelObject.SetActive(false);
-
-        var cancelButton = cancelObject.GetComponent<Button>();
-        if (cancelButton != null)
-        {
-            cancelButton.onClick.RemoveAllListeners();
-        }
-
-        return cancelButton;
     }
 }
