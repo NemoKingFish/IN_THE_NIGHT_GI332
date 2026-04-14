@@ -1,6 +1,7 @@
+using Photon.Pun;
 using UnityEngine;
 
-public class ChecklistWindowToggle : MonoBehaviour
+public class ChecklistWindowToggle : MonoBehaviourPunCallbacks
 {
     [SerializeField] private GameObject checklistWindow;
     [SerializeField] private KeyCode toggleKey = KeyCode.Tab;
@@ -13,9 +14,17 @@ public class ChecklistWindowToggle : MonoBehaviour
         }
     }
 
+    public override void OnLeftRoom()
+    {
+        if (checklistWindow != null)
+        {
+            checklistWindow.SetActive(false);
+        }
+    }
+
     private void Update()
     {
-        if (Input.GetKeyDown(toggleKey))
+        if (PhotonNetwork.InRoom && Input.GetKeyDown(toggleKey))
         {
             ToggleWindow();
         }
@@ -23,22 +32,49 @@ public class ChecklistWindowToggle : MonoBehaviour
 
     public void ToggleWindow()
     {
-        if (checklistWindow == null) return;
+        if (!PhotonNetwork.InRoom || checklistWindow == null)
+        {
+            return;
+        }
 
         checklistWindow.SetActive(!checklistWindow.activeSelf);
+
+        if (checklistWindow.activeSelf)
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+        else
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
     }
 
     public void OpenWindow()
     {
-        if (checklistWindow == null) return;
+        if (!PhotonNetwork.InRoom || checklistWindow == null)
+        {
+            return;
+        }
 
         checklistWindow.SetActive(true);
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
 
     public void CloseWindow()
     {
-        if (checklistWindow == null) return;
+        if (checklistWindow == null)
+        {
+            return;
+        }
 
         checklistWindow.SetActive(false);
+        if (PhotonNetwork.InRoom)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
     }
 }

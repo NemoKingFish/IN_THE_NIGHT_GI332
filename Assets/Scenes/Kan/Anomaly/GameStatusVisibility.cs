@@ -1,61 +1,41 @@
-using Unity.Netcode;
+using Photon.Pun;
+using Photon.Realtime;
 using UnityEngine;
 
-public class GameStatusVisibility : MonoBehaviour
+public class GameStatusVisibility : MonoBehaviourPunCallbacks
 {
     [SerializeField] private GameObject statusPanel;
 
     private void Start()
     {
-        ApplyDisconnectedState();
-
-        if (NetworkManager.Singleton == null)
-        {
-            Debug.LogWarning("NetworkManager.Singleton not found");
-            return;
-        }
-
-        NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
-        NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
-
         RefreshUI();
     }
 
-    private void OnDestroy()
-    {
-        if (NetworkManager.Singleton == null) return;
-
-        NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
-        NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
-    }
-
-    private void OnClientConnected(ulong clientId)
+    public override void OnJoinedRoom()
     {
         RefreshUI();
     }
 
-    private void OnClientDisconnected(ulong clientId)
+    public override void OnLeftRoom()
     {
         RefreshUI();
     }
 
-    private bool IsConnectedToSession()
+    public override void OnPlayerEnteredRoom(Player newPlayer)
     {
-        if (NetworkManager.Singleton == null) return false;
+        RefreshUI();
+    }
 
-        return NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsConnectedClient;
+    public override void OnPlayerLeftRoom(Player otherPlayer)
+    {
+        RefreshUI();
     }
 
     private void RefreshUI()
     {
-        if (statusPanel == null) return;
-
-        statusPanel.SetActive(IsConnectedToSession());
-    }
-
-    private void ApplyDisconnectedState()
-    {
         if (statusPanel != null)
-            statusPanel.SetActive(false);
+        {
+            statusPanel.SetActive(PhotonNetwork.InRoom);
+        }
     }
 }

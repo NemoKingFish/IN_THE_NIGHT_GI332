@@ -1,10 +1,17 @@
 using System;
 using System.Collections.Generic;
-using Unity.Netcode;
+using ExitGames.Client.Photon;
+using Photon.Pun;
+using Photon.Realtime;
 using UnityEngine;
+using PhotonHashtable = ExitGames.Client.Photon.Hashtable;
 
-public class ChecklistManager : NetworkBehaviour
+public class ChecklistManager : MonoBehaviourPunCallbacks, IOnEventCallback
 {
+    private const string CheckedMaskKey = "Checklist_CheckedMask";
+    private const string MatchResultKey = "Checklist_MatchResult";
+    private const byte ToggleChecklistEventCode = 41;
+
     public enum MatchResult
     {
         Playing = 0,
@@ -21,23 +28,50 @@ public class ChecklistManager : NetworkBehaviour
     [Header("Auto Filled Type List")]
     [SerializeField] private AnomalyType[] checklistTypes;
 
-    public NetworkVariable<ulong> checkedMask = new NetworkVariable<ulong>(
-        0,
-        NetworkVariableReadPermission.Everyone,
-        NetworkVariableWritePermission.Server
-    );
-
-    public NetworkVariable<int> matchResult = new NetworkVariable<int>(
-        (int)MatchResult.Playing,
-        NetworkVariableReadPermission.Everyone,
-        NetworkVariableWritePermission.Server
-    );
+    public ObservableValue<ulong> checkedMask = new ObservableValue<ulong>(0);
+    public ObservableValue<int> matchResult = new ObservableValue<int>((int)MatchResult.Playing);
 
     private ulong correctMask;
 
     private void Awake()
     {
         RefreshAnomalyData();
+    }
+
+    public override void OnEnable()
+    {
+        base.OnEnable();
+        PhotonNetwork.AddCallbackTarget(this);
+    }
+
+    public override void OnDisable()
+    {
+        PhotonNetwork.RemoveCallbackTarget(this);
+        base.OnDisable();
+    }
+
+    private void Start()
+    {
+        if (!PhotonNetwork.InRoom)
+        {
+            checkedMask.SetValue(0);
+            matchResult.SetValue((int)MatchResult.Playing);
+            return;
+        }
+
+        ApplyRoomState(PhotonNetwork.CurrentRoom.CustomProperties);
+        EnsureRoomStateInitialized();
+    }
+
+    public override void OnJoinedRoom()
+    {
+        ApplyRoomState(PhotonNetwork.CurrentRoom.CustomProperties);
+        EnsureRoomStateInitialized();
+    }
+
+    public override void OnRoomPropertiesUpdate(PhotonHashtable propertiesThatChanged)
+    {
+        ApplyRoomState(propertiesThatChanged);
     }
 
 #if UNITY_EDITOR
@@ -58,7 +92,7 @@ public class ChecklistManager : NetworkBehaviour
     {
         if (anomalyGroup == null)
         {
-            anomalyPoints = new AnomalySpawnPoint[0];
+            anomalyPoints = Array.Empty<AnomalySpawnPoint>();
             return;
         }
 
@@ -67,13 +101,15 @@ public class ChecklistManager : NetworkBehaviour
 
     private void RefreshChecklistTypesFromEnum()
     {
-        List<AnomalyType> allTypes = new List<AnomalyType>();
-        AnomalyType[] enumValues = (AnomalyType[])Enum.GetValues(typeof(AnomalyType));
+        var allTypes = new List<AnomalyType>();
+        var enumValues = (AnomalyType[])Enum.GetValues(typeof(AnomalyType));
 
-        for (int i = 0; i < enumValues.Length; i++)
+        for (var i = 0; i < enumValues.Length; i++)
         {
             if (enumValues[i] == AnomalyType.None)
+            {
                 continue;
+            }
 
             allTypes.Add(enumValues[i]);
         }
@@ -89,7 +125,9 @@ public class ChecklistManager : NetworkBehaviour
     public string GetItemName(int index)
     {
         if (checklistTypes == null || index < 0 || index >= checklistTypes.Length)
+        {
             return $"AnomalyType {index}";
+        }
 
         return checklistTypes[index].ToString();
     }
@@ -97,14 +135,16 @@ public class ChecklistManager : NetworkBehaviour
     public AnomalyType GetChecklistType(int index)
     {
         if (checklistTypes == null || index < 0 || index >= checklistTypes.Length)
+        {
             return AnomalyType.None;
+        }
 
         return checklistTypes[index];
     }
 
     public bool IsItemChecked(int index)
     {
-        ulong bit = 1UL << index;
+        var bit = 1UL << index;
         return (checkedMask.Value & bit) != 0;
     }
 
@@ -115,35 +155,47 @@ public class ChecklistManager : NetworkBehaviour
 
     public void PrepareForNewRound()
     {
-        if (!IsServer) return;
+        if (!CanWriteState())
+        {
+            return;
+        }
 
         BuildCorrectMask();
-        checkedMask.Value = 0;
-        matchResult.Value = (int)MatchResult.Playing;
+        SetCheckedMask(0);
+        SetMatchResult((int)MatchResult.Playing);
     }
 
     public void ResetOnlySelections()
     {
-        if (!IsServer) return;
+        if (!CanWriteState())
+        {
+            return;
+        }
 
-        checkedMask.Value = 0;
-        matchResult.Value = (int)MatchResult.Playing;
+        SetCheckedMask(0);
+        SetMatchResult((int)MatchResult.Playing);
     }
 
     private void BuildCorrectMask()
     {
         correctMask = 0;
 
-        if (checklistTypes == null || anomalyPoints == null) return;
-
-        for (int typeIndex = 0; typeIndex < checklistTypes.Length; typeIndex++)
+        if (checklistTypes == null || anomalyPoints == null)
         {
-            AnomalyType checklistType = checklistTypes[typeIndex];
-            bool typeExistsThisRound = false;
+            return;
+        }
 
-            for (int pointIndex = 0; pointIndex < anomalyPoints.Length; pointIndex++)
+        for (var typeIndex = 0; typeIndex < checklistTypes.Length; typeIndex++)
+        {
+            var checklistType = checklistTypes[typeIndex];
+            var typeExistsThisRound = false;
+
+            for (var pointIndex = 0; pointIndex < anomalyPoints.Length; pointIndex++)
             {
-                if (anomalyPoints[pointIndex] == null) continue;
+                if (anomalyPoints[pointIndex] == null)
+                {
+                    continue;
+                }
 
                 if (anomalyPoints[pointIndex].GetCurrentAnomalyType() == checklistType)
                 {
@@ -161,35 +213,189 @@ public class ChecklistManager : NetworkBehaviour
 
     public bool EvaluateSubmission()
     {
-        if (!IsServer) return false;
+        if (!CanWriteState())
+        {
+            return false;
+        }
 
-        bool correct = checkedMask.Value == correctMask;
-        matchResult.Value = correct ? (int)MatchResult.Win : (int)MatchResult.Lose;
+        var correct = checkedMask.Value == correctMask;
+        SetMatchResult(correct ? (int)MatchResult.Win : (int)MatchResult.Lose);
         return correct;
     }
 
-    [ServerRpc(RequireOwnership = false)]
     public void ToggleChecklistItemServerRpc(int index, bool isChecked)
     {
-        if (matchResult.Value != (int)MatchResult.Playing) return;
-        if (checklistTypes == null) return;
-        if (index < 0 || index >= checklistTypes.Length) return;
+        if (matchResult.Value != (int)MatchResult.Playing || checklistTypes == null)
+        {
+            return;
+        }
 
-        ulong bit = 1UL << index;
-        ulong current = checkedMask.Value;
+        if (index < 0 || index >= checklistTypes.Length)
+        {
+            return;
+        }
+
+        if (CanWriteState())
+        {
+            ApplyToggle(index, isChecked);
+            return;
+        }
+
+        PhotonNetwork.RaiseEvent(
+            ToggleChecklistEventCode,
+            new object[] { index, isChecked },
+            new RaiseEventOptions { Receivers = ReceiverGroup.MasterClient },
+            SendOptions.SendReliable);
+    }
+
+    public void OnEvent(EventData photonEvent)
+    {
+        if (photonEvent.Code != ToggleChecklistEventCode || !CanWriteState())
+        {
+            return;
+        }
+
+        if (photonEvent.CustomData is not object[] payload || payload.Length < 2)
+        {
+            return;
+        }
+
+        ApplyToggle((int)payload[0], (bool)payload[1]);
+    }
+
+    private void ApplyToggle(int index, bool isChecked)
+    {
+        var bit = 1UL << index;
+        var current = checkedMask.Value;
 
         if (isChecked)
+        {
             current |= bit;
+        }
         else
+        {
             current &= ~bit;
+        }
 
-        checkedMask.Value = current;
+        SetCheckedMask(current);
     }
 
     public AnomalySpawnPoint GetPoint(int index)
     {
-        if (anomalyPoints == null) return null;
-        if (index < 0 || index >= anomalyPoints.Length) return null;
+        if (anomalyPoints == null || index < 0 || index >= anomalyPoints.Length)
+        {
+            return null;
+        }
+
         return anomalyPoints[index];
+    }
+
+    private void EnsureRoomStateInitialized()
+    {
+        if (!CanWriteState() || !PhotonNetwork.InRoom)
+        {
+            return;
+        }
+
+        var updates = new PhotonHashtable();
+
+        if (!PhotonNetwork.CurrentRoom.CustomProperties.ContainsKey(CheckedMaskKey))
+        {
+            updates[CheckedMaskKey] = "0";
+        }
+
+        if (!PhotonNetwork.CurrentRoom.CustomProperties.ContainsKey(MatchResultKey))
+        {
+            updates[MatchResultKey] = (int)MatchResult.Playing;
+        }
+
+        if (updates.Count > 0)
+        {
+            PhotonNetwork.CurrentRoom.SetCustomProperties(updates);
+        }
+    }
+
+    private void ApplyRoomState(PhotonHashtable properties)
+    {
+        if (properties == null)
+        {
+            return;
+        }
+
+        if (properties.ContainsKey(CheckedMaskKey))
+        {
+            checkedMask.Value = ReadULong(properties, CheckedMaskKey, 0);
+        }
+
+        if (properties.ContainsKey(MatchResultKey))
+        {
+            matchResult.Value = ReadInt(properties, MatchResultKey, (int)MatchResult.Playing);
+        }
+    }
+
+    private void SetCheckedMask(ulong newMask)
+    {
+        checkedMask.Value = newMask;
+
+        if (PhotonNetwork.InRoom)
+        {
+            PhotonNetwork.CurrentRoom.SetCustomProperties(new PhotonHashtable
+            {
+                { CheckedMaskKey, newMask.ToString() }
+            });
+        }
+    }
+
+    private void SetMatchResult(int result)
+    {
+        matchResult.Value = result;
+
+        if (PhotonNetwork.InRoom)
+        {
+            PhotonNetwork.CurrentRoom.SetCustomProperties(new PhotonHashtable
+            {
+                { MatchResultKey, result }
+            });
+        }
+    }
+
+    private static int ReadInt(PhotonHashtable properties, string key, int fallback)
+    {
+        if (properties.TryGetValue(key, out var value) && value is int intValue)
+        {
+            return intValue;
+        }
+
+        return fallback;
+    }
+
+    private static ulong ReadULong(PhotonHashtable properties, string key, ulong fallback)
+    {
+        if (!properties.TryGetValue(key, out var value) || value == null)
+        {
+            return fallback;
+        }
+
+        if (value is string textValue && ulong.TryParse(textValue, out var parsed))
+        {
+            return parsed;
+        }
+
+        if (value is long longValue)
+        {
+            return (ulong)longValue;
+        }
+
+        if (value is int intValue)
+        {
+            return (ulong)intValue;
+        }
+
+        return fallback;
+    }
+
+    private static bool CanWriteState()
+    {
+        return !PhotonNetwork.InRoom || PhotonNetwork.IsMasterClient;
     }
 }

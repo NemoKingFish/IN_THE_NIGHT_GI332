@@ -1,55 +1,41 @@
-using Unity.Netcode;
+using Photon.Pun;
+using Photon.Realtime;
 using UnityEngine;
 
-public class ChecklistButtonVisibility : MonoBehaviour
+public class ChecklistButtonVisibility : MonoBehaviourPunCallbacks
 {
     [SerializeField] private GameObject openChecklistButton;
 
     private void Start()
     {
-        if (openChecklistButton != null)
-            openChecklistButton.SetActive(false);
-
-        if (NetworkManager.Singleton == null)
-        {
-            Debug.LogWarning("NetworkManager.Singleton not found");
-            return;
-        }
-
-        NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
-        NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
-
-        // กรณีเข้าเกมมาแล้ว network ทำงานอยู่
         RefreshButtonState();
     }
 
-    private void OnDestroy()
-    {
-        if (NetworkManager.Singleton == null) return;
-
-        NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
-        NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
-    }
-
-    private void OnClientConnected(ulong clientId)
+    public override void OnJoinedRoom()
     {
         RefreshButtonState();
     }
 
-    private void OnClientDisconnected(ulong clientId)
+    public override void OnLeftRoom()
+    {
+        RefreshButtonState();
+    }
+
+    public override void OnPlayerEnteredRoom(Player newPlayer)
+    {
+        RefreshButtonState();
+    }
+
+    public override void OnPlayerLeftRoom(Player otherPlayer)
     {
         RefreshButtonState();
     }
 
     private void RefreshButtonState()
     {
-        if (openChecklistButton == null || NetworkManager.Singleton == null) return;
-
-        bool isConnected =
-            NetworkManager.Singleton.IsHost ||
-            NetworkManager.Singleton.IsClient ||
-            NetworkManager.Singleton.IsServer;
-
-        openChecklistButton.SetActive(isConnected);
+        if (openChecklistButton != null)
+        {
+            openChecklistButton.SetActive(PhotonNetwork.InRoom);
+        }
     }
 }
