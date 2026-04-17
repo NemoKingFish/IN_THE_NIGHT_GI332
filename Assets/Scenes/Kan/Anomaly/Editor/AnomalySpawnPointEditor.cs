@@ -1,4 +1,5 @@
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 [CustomEditor(typeof(AnomalySpawnPoint))]
@@ -29,6 +30,19 @@ public class AnomalySpawnPointEditor : Editor
 
     public override void OnInspectorGUI()
     {
+        if (!Application.isPlaying && target is AnomalySpawnPoint point)
+        {
+            if (point.SyncEditorGeneratedFieldsNow())
+            {
+                EditorUtility.SetDirty(point);
+
+                if (point.gameObject.scene.IsValid())
+                {
+                    EditorSceneManager.MarkSceneDirty(point.gameObject.scene);
+                }
+            }
+        }
+
         serializedObject.Update();
 
         var anomalyType = (AnomalyType)assignedAnomalyTypeProperty.enumValueIndex;
@@ -63,8 +77,13 @@ public class AnomalySpawnPointEditor : Editor
         }
 
         EditorGUILayout.Space(4f);
-        EditorGUILayout.PropertyField(anomalyIdProperty, new GUIContent("Anomaly ID"));
-        EditorGUILayout.PropertyField(anomalyNameProperty, new GUIContent("Anomaly Name"));
+        using (new EditorGUI.DisabledScope(true))
+        {
+            EditorGUILayout.PropertyField(anomalyIdProperty, new GUIContent("Anomaly ID"));
+            EditorGUILayout.PropertyField(anomalyNameProperty, new GUIContent("Anomaly Name"));
+        }
+
+        EditorGUILayout.HelpBox("Anomaly ID runs automatically from 1 and avoids duplicates in Edit Mode. Anomaly Name follows the current object name automatically.", MessageType.None);
         EditorGUILayout.PropertyField(assignedAnomalyTypeProperty, new GUIContent("Assigned Anomaly Type"));
 
         EditorGUILayout.Space(4f);
@@ -83,6 +102,174 @@ public class AnomalySpawnPointEditor : Editor
             EditorGUILayout.HelpBox("Moved offsets are active only when Assigned Anomaly Type is set to MovedObject.", MessageType.None);
         }
 
+        EditorGUILayout.Space(6f);
+        using (new EditorGUI.DisabledScope(Application.isPlaying))
+        {
+            if (target is AnomalySpawnPoint previewPoint)
+            {
+                var nextPreviewState = EditorGUILayout.Toggle(
+                    new GUIContent("Preview Anomaly In Edit Mode"),
+                    previewPoint.IsPreviewAnomalyInEditMode());
+
+                if (nextPreviewState != previewPoint.IsPreviewAnomalyInEditMode())
+                {
+                    Undo.RecordObject(previewPoint, "Toggle Anomaly Preview");
+                    previewPoint.SetPreviewAnomalyInEditMode(nextPreviewState);
+                    EditorUtility.SetDirty(previewPoint);
+
+                    if (previewPoint.gameObject.scene.IsValid())
+                    {
+                        EditorSceneManager.MarkSceneDirty(previewPoint.gameObject.scene);
+                    }
+
+                    serializedObject.Update();
+                }
+            }
+        }
+
+        if (Application.isPlaying)
+        {
+            EditorGUILayout.HelpBox("Edit-mode anomaly preview is disabled automatically while the game is playing.", MessageType.None);
+        }
+        else
+        {
+            EditorGUILayout.HelpBox("Enable this only to preview how the anomaly will look in Edit Mode. It is reset back to normal automatically when entering Play Mode.", MessageType.None);
+        }
+
         serializedObject.ApplyModifiedProperties();
+    }
+}
+
+[InitializeOnLoad]
+public static class AnomalySpawnPointPlayModePreviewReset
+{
+    private static bool hierarchySyncQueued;
+
+    static AnomalySpawnPointPlayModePreviewReset()
+    {
+        EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+        EditorApplication.hierarchyChanged += QueueHierarchySync;
+    }
+
+    private static void OnPlayModeStateChanged(PlayModeStateChange state)
+    {
+        if (state != PlayModeStateChange.ExitingEditMode)
+        {
+            return;
+        }
+
+        var points = Object.FindObjectsByType<AnomalySpawnPoint>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (var i = 0; i < points.Length; i++)
+        {
+            var point = points[i];
+            if (point == null || !point.IsPreviewAnomalyInEditMode())
+            {
+                continue;
+            }
+
+            Undo.RecordObject(point, "Disable Anomaly Edit Preview");
+            point.SetPreviewAnomalyInEditMode(false);
+            EditorUtility.SetDirty(point);
+
+            if (point.gameObject.scene.IsValid())
+            {
+                EditorSceneManager.MarkSceneDirty(point.gameObject.scene);
+            }
+        }
+    }
+
+    private static void QueueHierarchySync()
+    {
+        if (Application.isPlaying || hierarchySyncQueued)
+        {
+            return;
+        }
+
+        hierarchySyncQueued = true;
+        EditorApplication.delayCall += SyncHierarchyGeneratedFields;
+    }
+
+    private static void SyncHierarchyGeneratedFields()
+    {
+        hierarchySyncQueued = false;
+
+        if (Application.isPlaying)
+        {
+            return;
+        }
+
+        var points = Object.FindObjectsByType<AnomalySpawnPoint>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        System.Array.Sort(points, CompareByHierarchyOrder);
+
+        var nextId = 1;
+        for (var i = 0; i < points.Length; i++)
+        {
+            var point = points[i];
+            if (point == null)
+            {
+                continue;
+            }
+
+            var desiredName = point.gameObject != null ? point.gameObject.name : string.Empty;
+            var changed = point.SyncEditorGeneratedFieldsNow();
+
+            if (point.GetAnomalyID() != nextId || point.GetAnomalyName() != desiredName)
+            {
+                point.ApplyEditorGeneratedIdentity(nextId, desiredName);
+                changed = true;
+            }
+
+            if (changed)
+            {
+                EditorUtility.SetDirty(point);
+
+                if (point.gameObject.scene.IsValid())
+                {
+                    EditorSceneManager.MarkSceneDirty(point.gameObject.scene);
+                }
+            }
+
+            nextId++;
+        }
+    }
+
+    private static int CompareByHierarchyOrder(AnomalySpawnPoint left, AnomalySpawnPoint right)
+    {
+        if (ReferenceEquals(left, right))
+        {
+            return 0;
+        }
+
+        if (left == null)
+        {
+            return 1;
+        }
+
+        if (right == null)
+        {
+            return -1;
+        }
+
+        var leftPath = GetHierarchyOrderingPath(left.transform);
+        var rightPath = GetHierarchyOrderingPath(right.transform);
+        return string.CompareOrdinal(leftPath, rightPath);
+    }
+
+    private static string GetHierarchyOrderingPath(Transform target)
+    {
+        if (target == null)
+        {
+            return string.Empty;
+        }
+
+        var path = target.GetSiblingIndex().ToString("D4");
+        var current = target.parent;
+        while (current != null)
+        {
+            path = current.GetSiblingIndex().ToString("D4") + "/" + path;
+            current = current.parent;
+        }
+
+        return target.gameObject.scene.name + "/" + path;
     }
 }

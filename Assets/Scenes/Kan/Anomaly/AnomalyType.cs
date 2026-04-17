@@ -6,5 +6,11 @@ public enum AnomalyType
     MovedObject = 2,
     ExtraObject = 3,
     ChangedObject = 4,
-    Light = 5
+    StrangeLight = 5,
+    StrangeSound = 6,
+    PictureChanged = 7,
+    MultiplyingObject = 8,
+    Creature = 9,
+    Other = 10
+
 }

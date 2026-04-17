@@ -4,6 +4,7 @@ using ExitGames.Client.Photon;
 using Photon.Pun;
 using Photon.Realtime;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using PhotonHashtable = ExitGames.Client.Photon.Hashtable;
 
 public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
@@ -37,6 +38,10 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
     [SerializeField] private int scoreToWin = 3;
     [SerializeField] private float memorizeDuration = 8f;
     [SerializeField] private float transitionDelay = 2f;
+    [SerializeField] private string victoryTargetSceneName = "";
+#if UNITY_EDITOR
+    [SerializeField] private UnityEditor.SceneAsset victoryTargetSceneAsset;
+#endif
 
     public ObservableValue<int> currentScore = new ObservableValue<int>(0);
     public ObservableValue<int> currentRound = new ObservableValue<int>(0);
@@ -47,6 +52,16 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
     private bool needMemorize = true;
     private RoundOutcome lastRoundOutcome = RoundOutcome.None;
     private int lastLocalSubmissionResetRound = -1;
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        if (victoryTargetSceneAsset != null)
+        {
+            victoryTargetSceneName = victoryTargetSceneAsset.name;
+        }
+    }
+#endif
 
     public override void OnEnable()
     {
@@ -239,6 +254,7 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
             if (currentScore.Value >= scoreToWin)
             {
                 SetPhaseState(GamePhase.Victory, 0d);
+                TryLoadVictoryScene();
                 return;
             }
         }
@@ -638,5 +654,47 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
     private static bool CanWriteState()
     {
         return !PhotonNetwork.InRoom || PhotonNetwork.IsMasterClient;
+    }
+
+    private void TryLoadVictoryScene()
+    {
+        var targetSceneName = victoryTargetSceneName;
+        if (string.IsNullOrWhiteSpace(targetSceneName))
+        {
+            return;
+        }
+
+        if (PhotonNetwork.InRoom)
+        {
+            if (Application.CanStreamedLevelBeLoaded(targetSceneName))
+            {
+                PhotonNetwork.LoadLevel(targetSceneName);
+                return;
+            }
+
+            Debug.LogWarning($"[GameRoundManager] Scene '{targetSceneName}' is not in Build Profiles, so the room will stay in the current scene.");
+            return;
+        }
+
+        if (Application.CanStreamedLevelBeLoaded(targetSceneName))
+        {
+            SceneManager.LoadScene(targetSceneName);
+            return;
+        }
+
+#if UNITY_EDITOR
+        var targetScenePath = victoryTargetSceneAsset != null
+            ? UnityEditor.AssetDatabase.GetAssetPath(victoryTargetSceneAsset)
+            : string.Empty;
+        if (!string.IsNullOrWhiteSpace(targetScenePath))
+        {
+            UnityEditor.SceneManagement.EditorSceneManager.LoadSceneInPlayMode(
+                targetScenePath,
+                new LoadSceneParameters(LoadSceneMode.Single));
+            return;
+        }
+#endif
+
+        Debug.LogWarning($"[GameRoundManager] No loadable target scene was found for '{targetSceneName}', so the game will remain in the current scene.");
     }
 }

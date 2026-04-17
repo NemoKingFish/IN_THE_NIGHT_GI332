@@ -49,7 +49,12 @@ public class PhotonScenePlayerSpawnManager : MonoBehaviourPunCallbacks, IOnEvent
             return;
         }
 
-        if (FindFirstObjectByType<GameRoundManager>() == null)
+        if (!PhotonNetwork.InRoom)
+        {
+            return;
+        }
+
+        if (FindFirstObjectByType<GameRoundManager>() == null && !SceneContainsSpawnPads())
         {
             return;
         }
@@ -486,6 +491,26 @@ public class PhotonScenePlayerSpawnManager : MonoBehaviourPunCallbacks, IOnEvent
         }
 
         return path;
+    }
+
+    private static bool SceneContainsSpawnPads()
+    {
+        var allTransforms = FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (var i = 0; i < allTransforms.Length; i++)
+        {
+            var current = allTransforms[i];
+            if (current == null)
+            {
+                continue;
+            }
+
+            if (current.name == "SpawnPad" || current.name == "SpawnPoint")
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static Transform FindChildRecursive(Transform parent, string childName)

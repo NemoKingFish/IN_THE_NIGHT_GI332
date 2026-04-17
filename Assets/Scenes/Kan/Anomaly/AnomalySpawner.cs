@@ -3,6 +3,10 @@ using ExitGames.Client.Photon;
 using Photon.Pun;
 using UnityEngine;
 using PhotonHashtable = ExitGames.Client.Photon.Hashtable;
+#if UNITY_EDITOR
+using System.Collections.Generic;
+using UnityEditor;
+#endif
 
 public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
 {
@@ -25,6 +29,9 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
     [SerializeField] private Vector3 movedLocalPositionOffset = Vector3.zero;
     [SerializeField] private Vector3 movedLocalEulerOffset = Vector3.zero;
 
+    [Header("Editor Preview")]
+    [SerializeField] private bool previewAnomalyInEditMode;
+
     public ObservableValue<int> currentAnomalyID = new ObservableValue<int>(-1);
     public ObservableValue<string> currentAnomalyName = new ObservableValue<string>("Normal");
     public ObservableValue<int> currentAnomalyType = new ObservableValue<int>((int)AnomalyType.None);
@@ -34,19 +41,26 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
     private Vector3 originalLocalPosition;
     private Quaternion originalLocalRotation;
     private Vector3 originalLocalScale;
+    private bool hasCachedOriginalTransform;
     private bool useSceneObjectAsNormal;
     private Renderer[] managedRenderers;
     private Collider[] managedColliders;
     private Collider2D[] managedColliders2D;
     private Canvas[] managedCanvases;
     private Light[] managedLights;
+#if UNITY_EDITOR
+    private bool editorPreviewRefreshQueued;
+    private bool suppressEditorOriginalTransformCapture;
+#endif
 
     private void Awake()
     {
-        originalLocalPosition = transform.localPosition;
-        originalLocalRotation = transform.localRotation;
-        originalLocalScale = transform.localScale;
+        if (Application.isPlaying && previewAnomalyInEditMode)
+        {
+            previewAnomalyInEditMode = false;
+        }
 
+        CaptureOriginalTransformSnapshot();
         CacheManagedComponents();
         useSceneObjectAsNormal = ShouldUseSceneObjectAsNormal();
         syncKeyPrefix = BuildSyncKeyPrefix();
@@ -175,7 +189,7 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
 
         if (normalPrefab != null)
         {
-            currentSpawnedObject = InstantiateManagedPrefab(normalPrefab, originalLocalPosition, originalLocalRotation);
+            currentSpawnedObject = InstantiateManagedPrefab(normalPrefab, originalLocalPosition, originalLocalRotation, true);
         }
     }
 
@@ -205,7 +219,7 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
 
         if (prefabToSpawn != null)
         {
-            currentSpawnedObject = InstantiateManagedPrefab(prefabToSpawn, anomalyLocalPosition, anomalyLocalRotation);
+            currentSpawnedObject = InstantiateManagedPrefab(prefabToSpawn, anomalyLocalPosition, anomalyLocalRotation, false);
         }
     }
 
@@ -237,11 +251,11 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
 
         if (normalPrefab != null)
         {
-            currentSpawnedObject = InstantiateManagedPrefab(normalPrefab, anomalyLocalPosition, anomalyLocalRotation);
+            currentSpawnedObject = InstantiateManagedPrefab(normalPrefab, anomalyLocalPosition, anomalyLocalRotation, true);
         }
     }
 
-    private GameObject InstantiateManagedPrefab(GameObject prefab, Vector3 localPosition, Quaternion localRotation)
+    private GameObject InstantiateManagedPrefab(GameObject prefab, Vector3 localPosition, Quaternion localRotation, bool forceOriginalScale)
     {
         if (prefab == null)
         {
@@ -255,13 +269,13 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
         {
             instance.transform.localPosition = localPosition;
             instance.transform.localRotation = localRotation;
-            instance.transform.localScale = originalLocalScale;
+            instance.transform.localScale = forceOriginalScale ? originalLocalScale : prefab.transform.localScale;
         }
         else
         {
             instance.transform.position = localPosition;
             instance.transform.rotation = localRotation;
-            instance.transform.localScale = originalLocalScale;
+            instance.transform.localScale = forceOriginalScale ? originalLocalScale : prefab.transform.localScale;
         }
 
         return instance;
@@ -274,7 +288,15 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
             return;
         }
 
-        Destroy(currentSpawnedObject);
+        if (Application.isPlaying)
+        {
+            Destroy(currentSpawnedObject);
+        }
+        else
+        {
+            DestroyImmediate(currentSpawnedObject);
+        }
+
         currentSpawnedObject = null;
     }
 
@@ -351,6 +373,7 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
 
     private void RestoreSceneObjectTransform()
     {
+        EnsureOriginalTransformSnapshot();
         ApplySceneObjectTransform(originalLocalPosition, originalLocalRotation);
         transform.localScale = originalLocalScale;
     }
@@ -465,6 +488,207 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
     }
 
 #if UNITY_EDITOR
+    public bool SyncEditorGeneratedFieldsNow()
+    {
+        return SyncEditorGeneratedFields();
+    }
+
+    public void ApplyEditorGeneratedIdentity(int nextId, string nextName)
+    {
+        anomalyID = Mathf.Max(1, nextId);
+        anomalyName = nextName ?? string.Empty;
+    }
+
+    public bool IsPreviewAnomalyInEditMode()
+    {
+        return previewAnomalyInEditMode;
+    }
+
+    public void SetPreviewAnomalyInEditMode(bool shouldPreview)
+    {
+        if (shouldPreview)
+        {
+            CaptureOriginalTransformSnapshot();
+        }
+
+        suppressEditorOriginalTransformCapture = true;
+        previewAnomalyInEditMode = shouldPreview;
+
+        if (Application.isPlaying)
+        {
+            if (previewAnomalyInEditMode)
+            {
+                previewAnomalyInEditMode = false;
+            }
+
+            return;
+        }
+
+        RefreshEditorPreview();
+    }
+
+    private void OnValidate()
+    {
+        SyncEditorGeneratedFields();
+
+        if (!previewAnomalyInEditMode && !suppressEditorOriginalTransformCapture)
+        {
+            CaptureOriginalTransformSnapshot();
+        }
+        else
+        {
+            EnsureOriginalTransformSnapshot();
+        }
+
+        suppressEditorOriginalTransformCapture = false;
+
+        CacheManagedComponents();
+        useSceneObjectAsNormal = ShouldUseSceneObjectAsNormal();
+
+        if (!Application.isPlaying)
+        {
+            QueueEditorPreviewRefresh();
+        }
+    }
+
+    private void RefreshEditorPreview()
+    {
+        if (Application.isPlaying)
+        {
+            return;
+        }
+
+        EnsureOriginalTransformSnapshot();
+
+        if (previewAnomalyInEditMode && assignedAnomalyType != AnomalyType.None)
+        {
+            ApplyLocalState(anomalyID, anomalyName, assignedAnomalyType);
+            return;
+        }
+
+        ApplyLocalState(-1, "Normal", AnomalyType.None);
+    }
+
+    private void QueueEditorPreviewRefresh()
+    {
+        if (editorPreviewRefreshQueued)
+        {
+            return;
+        }
+
+        editorPreviewRefreshQueued = true;
+        EditorApplication.delayCall += RefreshEditorPreviewDelayed;
+    }
+
+    private void RefreshEditorPreviewDelayed()
+    {
+        editorPreviewRefreshQueued = false;
+
+        if (this == null || gameObject == null || Application.isPlaying)
+        {
+            return;
+        }
+
+        RefreshEditorPreview();
+        EditorUtility.SetDirty(this);
+    }
+
+    private bool SyncEditorGeneratedFields()
+    {
+        if (Application.isPlaying)
+        {
+            return false;
+        }
+
+        var changed = false;
+        var nextName = gameObject != null ? gameObject.name : string.Empty;
+        if (anomalyName != nextName)
+        {
+            anomalyName = nextName;
+            changed = true;
+        }
+
+        var nextId = anomalyID;
+
+        if (anomalyID < 1 || IsDuplicateEditorAnomalyId(anomalyID))
+        {
+            nextId = GetNextAvailableEditorAnomalyId();
+        }
+
+        if (anomalyID != nextId)
+        {
+            anomalyID = nextId;
+            changed = true;
+        }
+
+        return changed;
+    }
+
+    private bool IsDuplicateEditorAnomalyId(int candidateId)
+    {
+        if (candidateId < 1)
+        {
+            return true;
+        }
+
+        var allPoints = FindObjectsByType<AnomalySpawnPoint>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (var i = 0; i < allPoints.Length; i++)
+        {
+            var point = allPoints[i];
+            if (point == null || point == this)
+            {
+                continue;
+            }
+
+            if (point.anomalyID == candidateId)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private int GetNextAvailableEditorAnomalyId()
+    {
+        var usedIds = new HashSet<int>();
+        var allPoints = FindObjectsByType<AnomalySpawnPoint>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (var i = 0; i < allPoints.Length; i++)
+        {
+            var point = allPoints[i];
+            if (point == null || point == this || point.anomalyID < 1)
+            {
+                continue;
+            }
+
+            usedIds.Add(point.anomalyID);
+        }
+
+        var nextId = 1;
+        while (usedIds.Contains(nextId))
+        {
+            nextId++;
+        }
+
+        return nextId;
+    }
+
+    private void CaptureOriginalTransformSnapshot()
+    {
+        originalLocalPosition = transform.localPosition;
+        originalLocalRotation = transform.localRotation;
+        originalLocalScale = transform.localScale;
+        hasCachedOriginalTransform = true;
+    }
+
+    private void EnsureOriginalTransformSnapshot()
+    {
+        if (!hasCachedOriginalTransform)
+        {
+            CaptureOriginalTransformSnapshot();
+        }
+    }
+
     private void OnDrawGizmosSelected()
     {
         if (assignedAnomalyType != AnomalyType.MovedObject)
