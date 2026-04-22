@@ -8,31 +8,83 @@ public class GameStatusUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI roundText;
     [SerializeField] private TextMeshProUGUI phaseText;
 
+    private bool subscribed;
+
     private void Start()
+    {
+        ResolveReferences();
+        TrySubscribe();
+        RefreshUI();
+    }
+
+    private void OnDestroy()
+    {
+        Unsubscribe();
+    }
+
+    private void Update()
     {
         if (gameRoundManager == null)
         {
-            Debug.LogError("GameStatusUI: GameRoundManager is missing.", this);
-            enabled = false;
-            return;
+            ResolveReferences();
+            TrySubscribe();
         }
 
-        RefreshUI();
+        if (gameRoundManager != null)
+        {
+            RefreshUI();
+        }
+    }
+
+    private void ResolveReferences()
+    {
+        if (gameRoundManager == null)
+        {
+            gameRoundManager = FindFirstObjectByType<GameRoundManager>();
+        }
+
+        if (scoreText == null)
+        {
+            scoreText = FindNamedText("ScoreText");
+        }
+
+        if (roundText == null)
+        {
+            roundText = FindNamedText("RoundText");
+        }
+
+        if (phaseText == null)
+        {
+            phaseText = FindNamedText("PhaseText");
+        }
+    }
+
+    private void TrySubscribe()
+    {
+        if (subscribed || gameRoundManager == null)
+        {
+            return;
+        }
 
         gameRoundManager.currentScore.OnValueChanged += OnScoreChanged;
         gameRoundManager.currentRound.OnValueChanged += OnRoundChanged;
         gameRoundManager.gamePhase.OnValueChanged += OnPhaseChanged;
         gameRoundManager.currentPhaseEndTime.OnValueChanged += OnPhaseEndTimeChanged;
+        subscribed = true;
     }
 
-    private void OnDestroy()
+    private void Unsubscribe()
     {
-        if (gameRoundManager == null) return;
+        if (!subscribed || gameRoundManager == null)
+        {
+            return;
+        }
 
         gameRoundManager.currentScore.OnValueChanged -= OnScoreChanged;
         gameRoundManager.currentRound.OnValueChanged -= OnRoundChanged;
         gameRoundManager.gamePhase.OnValueChanged -= OnPhaseChanged;
         gameRoundManager.currentPhaseEndTime.OnValueChanged -= OnPhaseEndTimeChanged;
+        subscribed = false;
     }
 
     private void OnScoreChanged(int oldValue, int newValue) => RefreshUI();
@@ -40,16 +92,13 @@ public class GameStatusUI : MonoBehaviour
     private void OnPhaseChanged(int oldValue, int newValue) => RefreshUI();
     private void OnPhaseEndTimeChanged(double oldValue, double newValue) => RefreshUI();
 
-    private void Update()
-    {
-        if (gameRoundManager != null && gameRoundManager.IsMemorizePhase())
-        {
-            RefreshUI();
-        }
-    }
-
     private void RefreshUI()
     {
+        if (gameRoundManager == null)
+        {
+            return;
+        }
+
         if (scoreText != null)
             scoreText.text = $"Score: {gameRoundManager.currentScore.Value}/{gameRoundManager.GetScoreToWin()}";
 
@@ -76,5 +125,18 @@ public class GameStatusUI : MonoBehaviour
                     break;
             }
         }
+    }
+
+    private TextMeshProUGUI FindNamedText(string objectName)
+    {
+        foreach (var text in GetComponentsInChildren<TextMeshProUGUI>(true))
+        {
+            if (text != null && text.name == objectName)
+            {
+                return text;
+            }
+        }
+
+        return null;
     }
 }

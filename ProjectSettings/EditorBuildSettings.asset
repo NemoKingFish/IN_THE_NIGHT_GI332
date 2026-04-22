@@ -32,6 +32,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Kan/Anomaly Test System Belike.unity
     guid: 728f7d810063d014893b3914a6e6968f
+  - enabled: 1
+    path: Assets/Scenes/Kan/Map.unity
+    guid: e32cc22366c39df4d98543b34e9358ab
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0

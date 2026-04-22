@@ -5,9 +5,16 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public class ChecklistUI : MonoBehaviourPunCallbacks
 {
+    private const string FallbackChecklistItemPrefabPath = "Assets/Scenes/Kan/CheckItem.prefab";
+    private const float ChecklistItemHeight = 104f;
+    private const float ChecklistItemSpacing = 14f;
+
     [Header("Managers")]
     [SerializeField] private ChecklistManager checklistManager;
     [SerializeField] private GameRoundManager gameRoundManager;
@@ -58,6 +65,7 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
         }
 
         ResolveOptionalReferences();
+        EnsureEventSystemExists();
         ConfigureWindowLayout();
         BuildUI();
 
@@ -92,7 +100,7 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
 
     private void Update()
     {
-        if (!initialized || !IsConnectedToSession())
+        if (!initialized || !IsSessionReady())
         {
             return;
         }
@@ -167,14 +175,14 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
         RefreshCursorState();
     }
 
-    private static bool IsConnectedToSession()
+    private bool IsSessionReady()
     {
-        return PhotonNetwork.InRoom;
+        return PhotonNetwork.InRoom || gameRoundManager != null;
     }
 
     private void RefreshCursorState()
     {
-        if (!IsConnectedToSession())
+        if (!IsSessionReady())
         {
             UnlockCursor();
             return;
@@ -192,9 +200,53 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
 
     private void ResolveOptionalReferences()
     {
+        if (checklistScrollRect == null)
+        {
+            if (checklistWindow != null)
+            {
+                checklistScrollRect = checklistWindow.GetComponentInChildren<ScrollRect>(true);
+            }
+
+            if (checklistScrollRect == null)
+            {
+                checklistScrollRect = GetComponentInChildren<ScrollRect>(true);
+            }
+        }
+
+        if (contentParent == null && checklistScrollRect != null)
+        {
+            contentParent = checklistScrollRect.content;
+        }
+
+        if (contentParent == null)
+        {
+            var searchRoot = checklistWindow != null ? checklistWindow.transform : transform;
+            contentParent = FindNamedChildComponent<RectTransform>(searchRoot, "Content");
+        }
+
+        if (itemPrefab == null)
+        {
+            itemPrefab = FindChecklistItemTemplateInScene();
+        }
+
+        if (itemPrefab == null)
+        {
+            itemPrefab = LoadFallbackChecklistItemPrefab();
+        }
+
+        if (itemPrefab == null)
+        {
+            itemPrefab = CreateRuntimeChecklistItemTemplate();
+        }
+
         if (checklistWindow != null && titleText == null)
         {
             titleText = FindNamedChildComponent<TextMeshProUGUI>(checklistWindow.transform, "TitleText");
+        }
+
+        if (checklistWindow != null && titleText == null)
+        {
+            titleText = CreateTitleText(checklistWindow.transform);
         }
 
         if (submitButton != null && submitButtonText == null)
@@ -232,17 +284,31 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
 
     private void ConfigureWindowLayout()
     {
+        if (checklistWindow != null && checklistWindow.transform is RectTransform windowRect)
+        {
+            windowRect.anchorMin = Vector2.zero;
+            windowRect.anchorMax = Vector2.one;
+            windowRect.pivot = new Vector2(0.5f, 0.5f);
+            windowRect.anchoredPosition = Vector2.zero;
+            windowRect.offsetMin = Vector2.zero;
+            windowRect.offsetMax = Vector2.zero;
+        }
+
         if (titleText != null)
         {
             titleText.text = "Check List";
             titleText.fontSize = 58f;
             titleText.alignment = TextAlignmentOptions.Center;
+            titleText.color = Color.black;
+            titleText.raycastTarget = false;
 
             if (titleText.rectTransform != null)
             {
-                titleText.rectTransform.anchorMin = new Vector2(0f, 1f);
-                titleText.rectTransform.anchorMax = new Vector2(1f, 1f);
+                titleText.rectTransform.anchorMin = new Vector2(0.5f, 1f);
+                titleText.rectTransform.anchorMax = new Vector2(0.5f, 1f);
                 titleText.rectTransform.pivot = new Vector2(0.5f, 1f);
+                titleText.rectTransform.anchoredPosition = new Vector2(0f, -18f);
+                titleText.rectTransform.sizeDelta = new Vector2(760f, 88f);
             }
         }
 
@@ -281,6 +347,7 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
             }
 
             DisableEmbeddedScrollbarVisuals();
+            ConfigureScrollViewBounds();
         }
 
         if (contentParent is RectTransform contentRect)
@@ -301,7 +368,7 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
             layoutGroup.padding.right = 18;
             layoutGroup.padding.top = 14;
             layoutGroup.padding.bottom = 14;
-            layoutGroup.spacing = 14f;
+            layoutGroup.spacing = ChecklistItemSpacing;
             layoutGroup.childAlignment = TextAnchor.UpperCenter;
             layoutGroup.childControlWidth = true;
             layoutGroup.childForceExpandWidth = true;
@@ -338,26 +405,99 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
     {
         if (contentParent == null || itemPrefab == null || checklistManager == null)
         {
-            Debug.LogError("ChecklistUI: Missing references.");
+            Debug.LogError($"ChecklistUI: Missing references. contentParent={contentParent != null}, itemPrefab={itemPrefab != null}, checklistManager={checklistManager != null}");
             return;
         }
 
+        checklistManager.RefreshAnomalyData();
+
+        var templateTransform = itemPrefab.transform;
+        var templateIsSceneChild = templateTransform != null && templateTransform.IsChildOf(contentParent);
+
         foreach (Transform child in contentParent)
         {
+            if (templateIsSceneChild && child == templateTransform)
+            {
+                child.gameObject.SetActive(false);
+                continue;
+            }
+
             Destroy(child.gameObject);
         }
 
         spawnedItems.Clear();
 
         var count = checklistManager.GetItemCount();
+        ResizeContentForItemCount(count);
+
         for (var i = 0; i < count; i++)
         {
             var item = Instantiate(itemPrefab, contentParent);
+            item.gameObject.SetActive(true);
             item.Setup(this, i, checklistManager.GetItemName(i));
             spawnedItems.Add(item);
         }
 
         EnforceVerticalOnlyScroll();
+    }
+
+    private void ConfigureScrollViewBounds()
+    {
+        if (checklistScrollRect == null || checklistScrollRect.transform is not RectTransform scrollRectTransform)
+        {
+            return;
+        }
+
+        scrollRectTransform.anchorMin = new Vector2(0.18f, 0.24f);
+        scrollRectTransform.anchorMax = new Vector2(0.82f, 0.74f);
+        scrollRectTransform.pivot = new Vector2(0.5f, 0.5f);
+        scrollRectTransform.anchoredPosition = Vector2.zero;
+        scrollRectTransform.offsetMin = Vector2.zero;
+        scrollRectTransform.offsetMax = Vector2.zero;
+
+        if (checklistScrollRect.viewport != null)
+        {
+            var viewportRect = checklistScrollRect.viewport;
+            viewportRect.anchorMin = Vector2.zero;
+            viewportRect.anchorMax = Vector2.one;
+            viewportRect.pivot = new Vector2(0.5f, 0.5f);
+            viewportRect.anchoredPosition = Vector2.zero;
+            viewportRect.offsetMin = Vector2.zero;
+            viewportRect.offsetMax = Vector2.zero;
+            viewportRect.sizeDelta = Vector2.zero;
+        }
+
+        if (checklistScrollRect.content == null && contentParent is RectTransform contentRect)
+        {
+            checklistScrollRect.content = contentRect;
+        }
+    }
+
+    private void ResizeContentForItemCount(int itemCount)
+    {
+        if (contentParent is not RectTransform contentRect)
+        {
+            return;
+        }
+
+        var verticalLayout = contentParent.GetComponent<VerticalLayoutGroup>();
+        var topPadding = verticalLayout != null ? verticalLayout.padding.top : 14;
+        var bottomPadding = verticalLayout != null ? verticalLayout.padding.bottom : 14;
+        var spacing = verticalLayout != null ? verticalLayout.spacing : ChecklistItemSpacing;
+        var desiredHeight = topPadding + bottomPadding + (itemCount * ChecklistItemHeight);
+
+        if (itemCount > 1)
+        {
+            desiredHeight += (itemCount - 1) * spacing;
+        }
+
+        contentRect.anchorMin = new Vector2(0f, 1f);
+        contentRect.anchorMax = new Vector2(1f, 1f);
+        contentRect.pivot = new Vector2(0.5f, 1f);
+        contentRect.anchoredPosition = Vector2.zero;
+        contentRect.offsetMin = new Vector2(0f, contentRect.offsetMin.y);
+        contentRect.offsetMax = new Vector2(0f, contentRect.offsetMax.y);
+        contentRect.sizeDelta = new Vector2(0f, Mathf.Max(desiredHeight, ChecklistItemHeight));
     }
 
     private void EnforceVerticalOnlyScroll()
@@ -392,6 +532,7 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
             }
 
             DisableEmbeddedScrollbarVisuals();
+            ConfigureScrollViewBounds();
         }
 
         if (contentParent is RectTransform contentRect)
@@ -490,7 +631,7 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
 
     private bool CanInteractChecklist()
     {
-        if (!IsConnectedToSession() || checklistManager == null || gameRoundManager == null)
+        if (!IsSessionReady() || checklistManager == null || gameRoundManager == null)
         {
             return false;
         }
@@ -569,7 +710,7 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
 
     public void OpenWindow()
     {
-        if (!IsConnectedToSession() || checklistWindow == null)
+        if (!IsSessionReady() || checklistWindow == null)
         {
             return;
         }
@@ -593,7 +734,7 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
 
     public void ToggleWindow()
     {
-        if (!IsConnectedToSession() || checklistWindow == null)
+        if (!IsSessionReady() || checklistWindow == null)
         {
             return;
         }
@@ -661,7 +802,10 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
             return;
         }
 
-        var shouldShowSelectionArea = gameRoundManager.IsInvestigationPhase() && !gameRoundManager.HasLocalPlayerSubmitted();
+        var phase = (GameRoundManager.GamePhase)gameRoundManager.gamePhase.Value;
+        var shouldShowSelectionArea = phase == GameRoundManager.GamePhase.Memorize
+            || phase == GameRoundManager.GamePhase.Investigation;
+
         if (checklistSelectionArea.activeSelf != shouldShowSelectionArea)
         {
             checklistSelectionArea.SetActive(shouldShowSelectionArea);
@@ -684,6 +828,112 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
         }
 
         return null;
+    }
+
+    private static TextMeshProUGUI CreateTitleText(Transform parent)
+    {
+        var titleObject = new GameObject("TitleText", typeof(RectTransform), typeof(TextMeshProUGUI));
+        titleObject.transform.SetParent(parent, false);
+        var title = titleObject.GetComponent<TextMeshProUGUI>();
+        title.text = "Check List";
+        title.fontSize = 58f;
+        title.color = Color.black;
+        title.alignment = TextAlignmentOptions.Center;
+        title.raycastTarget = false;
+        return title;
+    }
+
+    private static void EnsureEventSystemExists()
+    {
+        if (FindFirstObjectByType<EventSystem>() != null)
+        {
+            return;
+        }
+
+        var eventSystemObject = new GameObject("EventSystem");
+        eventSystemObject.AddComponent<EventSystem>();
+        eventSystemObject.AddComponent<StandaloneInputModule>();
+    }
+
+    private ChecklistItemUI FindChecklistItemTemplateInScene()
+    {
+        var searchRoot = checklistWindow != null ? checklistWindow.transform : transform;
+        var localItems = searchRoot.GetComponentsInChildren<ChecklistItemUI>(true);
+        for (var i = 0; i < localItems.Length; i++)
+        {
+            if (localItems[i] != null)
+            {
+                return localItems[i];
+            }
+        }
+
+        var sceneItems = FindObjectsByType<ChecklistItemUI>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (var i = 0; i < sceneItems.Length; i++)
+        {
+            if (sceneItems[i] != null)
+            {
+                return sceneItems[i];
+            }
+        }
+
+        return null;
+    }
+
+    private static ChecklistItemUI LoadFallbackChecklistItemPrefab()
+    {
+#if UNITY_EDITOR
+        return AssetDatabase.LoadAssetAtPath<ChecklistItemUI>(FallbackChecklistItemPrefabPath);
+#else
+        return null;
+#endif
+    }
+
+    private ChecklistItemUI CreateRuntimeChecklistItemTemplate()
+    {
+        if (contentParent == null)
+        {
+            return null;
+        }
+
+        var templateObject = new GameObject(
+            "RuntimeChecklistItemTemplate",
+            typeof(RectTransform),
+            typeof(Image),
+            typeof(Button),
+            typeof(Toggle),
+            typeof(Outline),
+            typeof(LayoutElement),
+            typeof(ChecklistItemUI));
+
+        templateObject.transform.SetParent(contentParent, false);
+        templateObject.SetActive(false);
+
+        var rectTransform = templateObject.GetComponent<RectTransform>();
+        rectTransform.anchorMin = new Vector2(0f, 1f);
+        rectTransform.anchorMax = new Vector2(1f, 1f);
+        rectTransform.pivot = new Vector2(0.5f, 1f);
+        rectTransform.sizeDelta = new Vector2(0f, 104f);
+
+        var image = templateObject.GetComponent<Image>();
+        image.color = new Color(0.76f, 0.76f, 0.76f, 0.96f);
+
+        var labelObject = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
+        labelObject.transform.SetParent(templateObject.transform, false);
+
+        var labelRect = labelObject.GetComponent<RectTransform>();
+        labelRect.anchorMin = Vector2.zero;
+        labelRect.anchorMax = Vector2.one;
+        labelRect.offsetMin = new Vector2(22f, 14f);
+        labelRect.offsetMax = new Vector2(-22f, -14f);
+
+        var labelText = labelObject.GetComponent<TextMeshProUGUI>();
+        labelText.text = "Anomaly";
+        labelText.fontSize = 34f;
+        labelText.color = Color.black;
+        labelText.alignment = TextAlignmentOptions.Center;
+        labelText.raycastTarget = false;
+
+        return templateObject.GetComponent<ChecklistItemUI>();
     }
 
     private static void ConfigureActionButton(Button button, float bottomOffset)

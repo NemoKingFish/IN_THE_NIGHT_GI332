@@ -703,7 +703,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1152088738}
   m_HandleRect: {fileID: 1152088737}
   m_Direction: 2
-  m_Value: 0
+  m_Value: 1
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -6490,8 +6490,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4a0c0ef9b76495eb29be6b7a52d7f01, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LobbySceneTargetReference
-  targetSceneName: Anomaly Test System Belike
-  targetSceneAsset: {fileID: 102900000, guid: 728f7d810063d014893b3914a6e6968f, type: 3}
+  targetSceneName: Map
+  targetSceneAsset: {fileID: 102900000, guid: e32cc22366c39df4d98543b34e9358ab, type: 3}
 --- !u!4 &1332640187
 Transform:
   m_ObjectHideFlags: 0
