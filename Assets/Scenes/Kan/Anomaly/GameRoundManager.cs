@@ -52,6 +52,7 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
     private bool needMemorize = true;
     private RoundOutcome lastRoundOutcome = RoundOutcome.None;
     private int lastLocalSubmissionResetRound = -1;
+    private bool offlineSubmitted;
 
 #if UNITY_EDITOR
     private void OnValidate()
@@ -78,18 +79,21 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
     private void Start()
     {
         EnsurePhotonSpawnManagerExists();
+        ResolveReferences();
 
         if (PhotonNetwork.InRoom)
         {
             ApplyRoomState(PhotonNetwork.CurrentRoom.CustomProperties);
             SyncLocalSubmissionFlagForCurrentPhase();
-            TryStartAsMaster();
         }
+
+        TryStartAsMaster();
     }
 
     public override void OnJoinedRoom()
     {
         EnsurePhotonSpawnManagerExists();
+        ResolveReferences();
         ApplyRoomState(PhotonNetwork.CurrentRoom.CustomProperties);
         SyncLocalSubmissionFlagForCurrentPhase();
         TryStartAsMaster();
@@ -100,6 +104,7 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
         StopGameLoop();
         currentPhaseEndTime.Value = 0d;
         lastLocalSubmissionResetRound = -1;
+        offlineSubmitted = false;
     }
 
     public override void OnMasterClientSwitched(Player newMasterClient)
@@ -127,6 +132,7 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
             return;
         }
 
+        ResolveReferences();
         StopGameLoop();
         gameLoopRoutine = StartCoroutine(GameLoop());
     }
@@ -145,7 +151,7 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
                 SetAllSpawnPointsToNormal();
                 ResetChecklistOnly();
 
-                SetPhaseState(GamePhase.Memorize, PhotonNetwork.Time + memorizeDuration);
+                SetPhaseState(GamePhase.Memorize, GetCurrentTime() + memorizeDuration);
                 yield return new WaitForSeconds(memorizeDuration);
             }
 
@@ -180,7 +186,7 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
 
     public void SubmitChecklistServerRpc()
     {
-        if (!PhotonNetwork.InRoom || gamePhase.Value != (int)GamePhase.Investigation)
+        if (gamePhase.Value != (int)GamePhase.Investigation)
         {
             return;
         }
@@ -342,7 +348,7 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
             return 0;
         }
 
-        var remainingTime = Math.Max(0d, currentPhaseEndTime.Value - PhotonNetwork.Time);
+        var remainingTime = Math.Max(0d, currentPhaseEndTime.Value - GetCurrentTime());
         return Mathf.CeilToInt((float)remainingTime);
     }
 
@@ -350,7 +356,7 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
     {
         if (!PhotonNetwork.InRoom)
         {
-            return 0;
+            return offlineSubmitted ? 1 : 0;
         }
 
         var submittedCount = 0;
@@ -368,11 +374,16 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
 
     public int GetExpectedSubmitterCount()
     {
-        return PhotonNetwork.InRoom ? PhotonNetwork.PlayerList.Length : 0;
+        return PhotonNetwork.InRoom ? PhotonNetwork.PlayerList.Length : 1;
     }
 
     public bool HasLocalPlayerSubmitted()
     {
+        if (!PhotonNetwork.InRoom)
+        {
+            return offlineSubmitted;
+        }
+
         return PhotonNetwork.LocalPlayer != null && GetPlayerSubmitted(PhotonNetwork.LocalPlayer);
     }
 
@@ -383,7 +394,7 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
 
     public void CancelChecklistSubmission()
     {
-        if (!PhotonNetwork.InRoom || gamePhase.Value != (int)GamePhase.Investigation)
+        if (gamePhase.Value != (int)GamePhase.Investigation)
         {
             return;
         }
@@ -400,6 +411,14 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
 
         EnsureRoomStateInitialized();
         StartGameLoop();
+    }
+
+    private void ResolveReferences()
+    {
+        if (checklistManager == null)
+        {
+            checklistManager = FindFirstObjectByType<ChecklistManager>();
+        }
     }
 
     private static void EnsurePhotonSpawnManagerExists()
@@ -572,7 +591,17 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
 
     private void SyncLocalSubmissionFlagForCurrentPhase()
     {
-        if (!PhotonNetwork.InRoom || PhotonNetwork.LocalPlayer == null)
+        if (!PhotonNetwork.InRoom)
+        {
+            if (gamePhase.Value != (int)GamePhase.Investigation)
+            {
+                offlineSubmitted = false;
+            }
+
+            return;
+        }
+
+        if (PhotonNetwork.LocalPlayer == null)
         {
             return;
         }
@@ -594,7 +623,14 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
 
     private void SetLocalSubmissionState(bool submitted)
     {
-        if (!PhotonNetwork.InRoom || PhotonNetwork.LocalPlayer == null)
+        if (!PhotonNetwork.InRoom)
+        {
+            offlineSubmitted = submitted;
+            TryResolveWhenAllPlayersSubmitted();
+            return;
+        }
+
+        if (PhotonNetwork.LocalPlayer == null)
         {
             return;
         }
@@ -627,7 +663,7 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
 
     private void TryResolveWhenAllPlayersSubmitted()
     {
-        if (!PhotonNetwork.InRoom || !CanWriteState())
+        if (!CanWriteState())
         {
             return;
         }
@@ -649,6 +685,11 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
         }
 
         ResolveChecklistSubmission();
+    }
+
+    private static double GetCurrentTime()
+    {
+        return PhotonNetwork.InRoom ? PhotonNetwork.Time : Time.timeAsDouble;
     }
 
     private static bool CanWriteState()
