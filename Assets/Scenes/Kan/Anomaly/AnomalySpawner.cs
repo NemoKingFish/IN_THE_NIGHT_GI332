@@ -487,6 +487,22 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
         return fallback;
     }
 
+    private void CaptureOriginalTransformSnapshot()
+    {
+        originalLocalPosition = transform.localPosition;
+        originalLocalRotation = transform.localRotation;
+        originalLocalScale = transform.localScale;
+        hasCachedOriginalTransform = true;
+    }
+
+    private void EnsureOriginalTransformSnapshot()
+    {
+        if (!hasCachedOriginalTransform)
+        {
+            CaptureOriginalTransformSnapshot();
+        }
+    }
+
 #if UNITY_EDITOR
     public bool SyncEditorGeneratedFieldsNow()
     {
@@ -671,22 +687,6 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
         }
 
         return nextId;
-    }
-
-    private void CaptureOriginalTransformSnapshot()
-    {
-        originalLocalPosition = transform.localPosition;
-        originalLocalRotation = transform.localRotation;
-        originalLocalScale = transform.localScale;
-        hasCachedOriginalTransform = true;
-    }
-
-    private void EnsureOriginalTransformSnapshot()
-    {
-        if (!hasCachedOriginalTransform)
-        {
-            CaptureOriginalTransformSnapshot();
-        }
     }
 
     private void OnDrawGizmosSelected()

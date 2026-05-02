@@ -1,4 +1,5 @@
-﻿using UnityEditor;
+#if UNITY_EDITOR
+using UnityEditor;
 using UnityEngine;
 
 [CustomEditor(typeof(TrackCreator), true), CanEditMultipleObjects]
@@ -8,10 +9,10 @@ public class TrackCreatorEditor : Editor
     {
         DrawDefaultInspector();
         TrackCreator trackCreator = (TrackCreator)target;
-        if(GUILayout.Button("Generate Track"))
+        if (GUILayout.Button("Generate Track"))
         {
             trackCreator.GenerateTrack();
         }
-
     }
 }
+#endif
