@@ -174,7 +174,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 03a2c1e66261e144fab9b7f84bf948d1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChecklistManager
-  ShowTopMostFoldoutHeaderGroup: 1
   anomalyGroup: {fileID: 710735644}
   anomalyPoints:
   - {fileID: 1877951324}
@@ -182,11 +181,7 @@ MonoBehaviour:
   - {fileID: 1836576458}
   - {fileID: 1936292920}
   - {fileID: 1916128651}
-  checklistTypes: 0100000002000000030000000400000005000000
-  checkedMask:
-    m_InternalValue: 0
-  matchResult:
-    m_InternalValue: 0
+  checklistTypes: 0100000002000000030000000400000005000000060000000700000008000000090000000a000000
 --- !u!4 &9558092
 Transform:
   m_ObjectHideFlags: 0
@@ -1657,6 +1652,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ed6939b8648d7c943b41ebb4fa6bf9d9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ConnectionButtons
+  gameVersion: KanDirect
+  devRegion: asia
+  maxPlayersPerRoom: 4
+  roomCodePrefix: KAN
 --- !u!1 &1042740758
 GameObject:
   m_ObjectHideFlags: 0
@@ -1873,6 +1872,12 @@ MonoBehaviour:
   submitButton: {fileID: 1620191025}
   closeButton: {fileID: 0}
   resultText: {fileID: 645635698}
+  titleText: {fileID: 0}
+  submitButtonText: {fileID: 0}
+  checklistScrollRect: {fileID: 0}
+  cancelSubmitButton: {fileID: 0}
+  cancelSubmitButtonText: {fileID: 0}
+  checklistSelectionArea: {fileID: 0}
   toggleKey: 9
 --- !u!114 &1139574050
 MonoBehaviour:
@@ -2098,17 +2103,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ffd5ea008166b4d40ac4eda62ad8fb73, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameRoundManager
-  ShowTopMostFoldoutHeaderGroup: 1
   checklistManager: {fileID: 9558091}
   scoreToWin: 3
   memorizeDuration: 8
   transitionDelay: 2
-  currentScore:
-    m_InternalValue: 0
-  currentRound:
-    m_InternalValue: 0
-  gamePhase:
-    m_InternalValue: 0
+  victoryTargetSceneName: 
+  victoryTargetSceneAsset: {fileID: 0}
 --- !u!4 &1472700909
 Transform:
   m_ObjectHideFlags: 0
