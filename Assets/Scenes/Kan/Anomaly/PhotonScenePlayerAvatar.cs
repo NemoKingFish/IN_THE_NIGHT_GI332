@@ -90,6 +90,11 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
         UpdateAnimator();
     }
 
+    private void LateUpdate()
+    {
+        UpdateNameLabelFacing();
+    }
+
     public void Initialize(int actorNumber, bool isLocal, string displayName)
     {
         ownerActorNumber = actorNumber;
@@ -150,6 +155,16 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
 
     public void OnLand()
     {
+    }
+
+    public void ResetMotionState()
+    {
+        verticalVelocity = -2f;
+        remoteTargetPosition = transform.position;
+        remoteTargetRotation = transform.rotation;
+        remoteTargetPitch = lookPitch;
+        lastAnimationSamplePosition = transform.position;
+        sampledHorizontalSpeed = 0f;
     }
 
     private void UpdateLocalMovement()
@@ -376,6 +391,28 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
             verticalVelocity = -2f;
             return;
         }
+    }
+
+    private void UpdateNameLabelFacing()
+    {
+        if (nameLabel == null || !nameLabel.gameObject.activeInHierarchy)
+        {
+            return;
+        }
+
+        var targetCamera = Camera.main;
+        if (targetCamera == null)
+        {
+            return;
+        }
+
+        var directionToCamera = targetCamera.transform.position - nameLabel.transform.position;
+        if (directionToCamera.sqrMagnitude <= 0.0001f)
+        {
+            return;
+        }
+
+        nameLabel.transform.rotation = Quaternion.LookRotation(directionToCamera.normalized, Vector3.up);
     }
 
     private float GetGroundCheckDistance()

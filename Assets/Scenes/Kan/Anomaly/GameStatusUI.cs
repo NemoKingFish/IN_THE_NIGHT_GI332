@@ -68,6 +68,7 @@ public class GameStatusUI : MonoBehaviour
 
         gameRoundManager.currentScore.OnValueChanged += OnScoreChanged;
         gameRoundManager.currentRound.OnValueChanged += OnRoundChanged;
+        gameRoundManager.currentProgressionPhase.OnValueChanged += OnProgressionPhaseChanged;
         gameRoundManager.gamePhase.OnValueChanged += OnPhaseChanged;
         gameRoundManager.currentPhaseEndTime.OnValueChanged += OnPhaseEndTimeChanged;
         subscribed = true;
@@ -82,6 +83,7 @@ public class GameStatusUI : MonoBehaviour
 
         gameRoundManager.currentScore.OnValueChanged -= OnScoreChanged;
         gameRoundManager.currentRound.OnValueChanged -= OnRoundChanged;
+        gameRoundManager.currentProgressionPhase.OnValueChanged -= OnProgressionPhaseChanged;
         gameRoundManager.gamePhase.OnValueChanged -= OnPhaseChanged;
         gameRoundManager.currentPhaseEndTime.OnValueChanged -= OnPhaseEndTimeChanged;
         subscribed = false;
@@ -89,6 +91,7 @@ public class GameStatusUI : MonoBehaviour
 
     private void OnScoreChanged(int oldValue, int newValue) => RefreshUI();
     private void OnRoundChanged(int oldValue, int newValue) => RefreshUI();
+    private void OnProgressionPhaseChanged(int oldValue, int newValue) => RefreshUI();
     private void OnPhaseChanged(int oldValue, int newValue) => RefreshUI();
     private void OnPhaseEndTimeChanged(double oldValue, double newValue) => RefreshUI();
 
@@ -100,10 +103,10 @@ public class GameStatusUI : MonoBehaviour
         }
 
         if (scoreText != null)
-            scoreText.text = $"Score: {gameRoundManager.currentScore.Value}/{gameRoundManager.GetScoreToWin()}";
+            scoreText.text = $"Area Phase: {gameRoundManager.GetCurrentProgressionPhase()}/3";
 
         if (roundText != null)
-            roundText.text = $"Round: {gameRoundManager.currentRound.Value}";
+            roundText.text = $"Round: {gameRoundManager.currentRound.Value}/{gameRoundManager.GetTotalRounds()}";
 
         if (phaseText != null)
         {
@@ -112,10 +115,15 @@ public class GameStatusUI : MonoBehaviour
             switch (phase)
             {
                 case GameRoundManager.GamePhase.Memorize:
-                    phaseText.text = $"Phase: Memorize ({gameRoundManager.GetMemorizeSecondsRemaining()})";
+                    phaseText.text = gameRoundManager.HasMemorizeTimer()
+                        ? $"Phase: Memorize ({gameRoundManager.GetMemorizeSecondsRemaining()})"
+                        : "Phase: Memorize";
+                    break;
+                case GameRoundManager.GamePhase.SpawnLockdown:
+                    phaseText.text = "Phase: Spawn Lockdown";
                     break;
                 case GameRoundManager.GamePhase.Investigation:
-                    phaseText.text = "Phase: Investigation";
+                    phaseText.text = $"Phase: Investigation ({gameRoundManager.GetInvestigationSecondsRemaining()})";
                     break;
                 case GameRoundManager.GamePhase.RoundTransition:
                     phaseText.text = "Phase: Transition";

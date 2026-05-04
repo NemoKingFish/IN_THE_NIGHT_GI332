@@ -21,6 +21,7 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
     [SerializeField] private int anomalyID;
     [SerializeField] private string anomalyName;
     [SerializeField] private AnomalyType assignedAnomalyType = AnomalyType.None;
+    [SerializeField, Range(1, 3)] private int anomalyPhase = 1;
 
     [Header("Spawn Chance")]
     [SerializeField, Range(0f, 100f)] private float anomalyChance = 30f;
@@ -106,8 +107,19 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
 
     public void RollAndSpawn()
     {
+        RollAndSpawn(3);
+    }
+
+    public void RollAndSpawn(int activeProgressionPhase)
+    {
         if (!CanWriteState())
         {
+            return;
+        }
+
+        if (!IsAvailableInProgressionPhase(activeProgressionPhase))
+        {
+            ApplySpawnState(false, true);
             return;
         }
 
@@ -434,6 +446,16 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
         return assignedAnomalyType.ToString();
     }
 
+    public int GetAnomalyPhase()
+    {
+        return Mathf.Clamp(anomalyPhase, 1, 3);
+    }
+
+    public bool IsAvailableInProgressionPhase(int activeProgressionPhase)
+    {
+        return GetAnomalyPhase() <= Mathf.Max(1, activeProgressionPhase);
+    }
+
     private bool CanWriteState()
     {
         return !PhotonNetwork.InRoom || PhotonNetwork.IsMasterClient;
@@ -546,6 +568,7 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
     private void OnValidate()
     {
         SyncEditorGeneratedFields();
+        anomalyPhase = Mathf.Clamp(anomalyPhase, 1, 3);
 
         if (!previewAnomalyInEditMode && !suppressEditorOriginalTransformCapture)
         {

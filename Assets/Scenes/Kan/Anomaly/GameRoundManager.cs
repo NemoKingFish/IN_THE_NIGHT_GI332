@@ -12,16 +12,19 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
     private const string ScoreKey = "Game_CurrentScore";
     private const string RoundKey = "Game_CurrentRound";
     private const string PhaseKey = "Game_Phase";
+    private const string ProgressionPhaseKey = "Game_ProgressionPhase";
     private const string PhaseEndTimeKey = "Game_PhaseEndTime";
+    private const string RoundOutcomeKey = "Game_RoundOutcome";
     private const string PlayerSubmittedKey = "PlayerSubmitted";
     private const byte SubmitChecklistEventCode = 42;
 
     public enum GamePhase
     {
         Memorize = 0,
-        Investigation = 1,
-        RoundTransition = 2,
-        Victory = 3
+        SpawnLockdown = 1,
+        Investigation = 2,
+        RoundTransition = 3,
+        Victory = 4
     }
 
     private enum RoundOutcome
@@ -34,10 +37,19 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
     [Header("References")]
     [SerializeField] private ChecklistManager checklistManager;
 
-    [Header("Game Settings")]
-    [SerializeField] private int scoreToWin = 3;
+    [Header("Round Rules")]
+    [SerializeField] private int totalRounds = 7;
+    [SerializeField] private int phaseTwoStartRound = 4;
+    [SerializeField] private int phaseThreeStartRound = 6;
+    [SerializeField] private bool useMemorizeTimer;
     [SerializeField] private float memorizeDuration = 8f;
+    [SerializeField] private float spawnLockdownDuration = 2f;
     [SerializeField] private float transitionDelay = 2f;
+    [SerializeField] private float phaseOneExplorationDuration = 120f;
+    [SerializeField] private float phaseTwoExplorationDuration = 180f;
+    [SerializeField] private float phaseThreeExplorationDuration = 240f;
+
+    [Header("Scene Flow")]
     [SerializeField] private string victoryTargetSceneName = "";
 #if UNITY_EDITOR
     [SerializeField] private UnityEditor.SceneAsset victoryTargetSceneAsset;
@@ -46,10 +58,10 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
     public ObservableValue<int> currentScore = new ObservableValue<int>(0);
     public ObservableValue<int> currentRound = new ObservableValue<int>(0);
     public ObservableValue<int> gamePhase = new ObservableValue<int>((int)GamePhase.Memorize);
+    public ObservableValue<int> currentProgressionPhase = new ObservableValue<int>(1);
     public ObservableValue<double> currentPhaseEndTime = new ObservableValue<double>(0d);
 
-    private Coroutine gameLoopRoutine;
-    private bool needMemorize = true;
+    private Coroutine phaseRoutine;
     private RoundOutcome lastRoundOutcome = RoundOutcome.None;
     private int lastLocalSubmissionResetRound = -1;
     private bool offlineSubmitted;
@@ -61,6 +73,16 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
         {
             victoryTargetSceneName = victoryTargetSceneAsset.name;
         }
+
+        totalRounds = Mathf.Max(1, totalRounds);
+        phaseTwoStartRound = Mathf.Clamp(phaseTwoStartRound, 2, totalRounds);
+        phaseThreeStartRound = Mathf.Clamp(phaseThreeStartRound, phaseTwoStartRound + 1, totalRounds);
+        spawnLockdownDuration = Mathf.Max(0f, spawnLockdownDuration);
+        transitionDelay = Mathf.Max(0f, transitionDelay);
+        phaseOneExplorationDuration = Mathf.Max(1f, phaseOneExplorationDuration);
+        phaseTwoExplorationDuration = Mathf.Max(1f, phaseTwoExplorationDuration);
+        phaseThreeExplorationDuration = Mathf.Max(1f, phaseThreeExplorationDuration);
+        memorizeDuration = Mathf.Max(0f, memorizeDuration);
     }
 #endif
 
@@ -101,10 +123,11 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
 
     public override void OnLeftRoom()
     {
-        StopGameLoop();
+        StopPhaseRoutine();
         currentPhaseEndTime.Value = 0d;
         lastLocalSubmissionResetRound = -1;
         offlineSubmitted = false;
+        lastRoundOutcome = RoundOutcome.None;
     }
 
     public override void OnMasterClientSwitched(Player newMasterClient)
@@ -115,7 +138,7 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
         }
         else
         {
-            StopGameLoop();
+            StopPhaseRoutine();
         }
     }
 
@@ -133,55 +156,19 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
         }
 
         ResolveReferences();
-        StopGameLoop();
-        gameLoopRoutine = StartCoroutine(GameLoop());
+        BeginMemorizeRound(1);
     }
 
-    private IEnumerator GameLoop()
+    public void AdvanceMemorizePhase()
     {
-        SetCurrentScore(0);
-        SetCurrentRound(0);
-        needMemorize = true;
-        lastRoundOutcome = RoundOutcome.None;
-
-        while (currentScore.Value < scoreToWin)
+        if (!CanWriteState() || gamePhase.Value != (int)GamePhase.Memorize)
         {
-            if (needMemorize)
-            {
-                SetAllSpawnPointsToNormal();
-                ResetChecklistOnly();
-
-                SetPhaseState(GamePhase.Memorize, GetCurrentTime() + memorizeDuration);
-                yield return new WaitForSeconds(memorizeDuration);
-            }
-
-            SetCurrentRound(currentRound.Value + 1);
-            SpawnRoundAnomalies();
-            PrepareChecklistForRound();
-            SetPhaseState(GamePhase.Investigation, 0d);
-
-            yield return new WaitUntil(() =>
-                gamePhase.Value == (int)GamePhase.RoundTransition ||
-                gamePhase.Value == (int)GamePhase.Victory);
-
-            if (gamePhase.Value == (int)GamePhase.Victory)
-            {
-                yield break;
-            }
-
-            yield return new WaitForSeconds(transitionDelay);
-
-            if (lastRoundOutcome == RoundOutcome.Correct)
-            {
-                needMemorize = false;
-            }
-            else if (lastRoundOutcome == RoundOutcome.Wrong)
-            {
-                needMemorize = true;
-            }
-
-            lastRoundOutcome = RoundOutcome.None;
+            return;
         }
+
+        StopPhaseRoutine();
+        SetPhaseState(GamePhase.SpawnLockdown, GetCurrentTime() + spawnLockdownDuration);
+        phaseRoutine = StartCoroutine(SpawnLockdownRoutine());
     }
 
     public void SubmitChecklistServerRpc()
@@ -243,89 +230,6 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
         }
     }
 
-    private void ResolveChecklistSubmission()
-    {
-        if (gamePhase.Value != (int)GamePhase.Investigation || checklistManager == null)
-        {
-            return;
-        }
-
-        var correct = checklistManager.EvaluateSubmission();
-
-        if (correct)
-        {
-            SetCurrentScore(currentScore.Value + 1);
-            lastRoundOutcome = RoundOutcome.Correct;
-
-            if (currentScore.Value >= scoreToWin)
-            {
-                SetPhaseState(GamePhase.Victory, 0d);
-                TryLoadVictoryScene();
-                return;
-            }
-        }
-        else
-        {
-            SetCurrentScore(0);
-            SetCurrentRound(0);
-            lastRoundOutcome = RoundOutcome.Wrong;
-        }
-
-        SetPhaseState(GamePhase.RoundTransition, 0d);
-    }
-
-    private void SetAllSpawnPointsToNormal()
-    {
-        if (checklistManager == null)
-        {
-            return;
-        }
-
-        var count = checklistManager.GetItemCount();
-        for (var i = 0; i < count; i++)
-        {
-            var point = checklistManager.GetPoint(i);
-            if (point != null)
-            {
-                point.SpawnNormal();
-            }
-        }
-    }
-
-    private void SpawnRoundAnomalies()
-    {
-        if (checklistManager == null)
-        {
-            return;
-        }
-
-        var count = checklistManager.GetItemCount();
-        for (var i = 0; i < count; i++)
-        {
-            var point = checklistManager.GetPoint(i);
-            if (point != null)
-            {
-                point.RollAndSpawn();
-            }
-        }
-    }
-
-    private void PrepareChecklistForRound()
-    {
-        if (checklistManager != null)
-        {
-            checklistManager.PrepareForNewRound();
-        }
-    }
-
-    private void ResetChecklistOnly()
-    {
-        if (checklistManager != null)
-        {
-            checklistManager.ResetOnlySelections();
-        }
-    }
-
     public bool IsInvestigationPhase()
     {
         return gamePhase.Value == (int)GamePhase.Investigation;
@@ -336,14 +240,45 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
         return gamePhase.Value == (int)GamePhase.Memorize;
     }
 
+    public bool IsSpawnLockdownPhase()
+    {
+        return gamePhase.Value == (int)GamePhase.SpawnLockdown;
+    }
+
     public int GetScoreToWin()
     {
-        return scoreToWin;
+        return totalRounds;
+    }
+
+    public int GetTotalRounds()
+    {
+        return totalRounds;
+    }
+
+    public int GetCurrentProgressionPhase()
+    {
+        return currentProgressionPhase.Value;
     }
 
     public int GetMemorizeSecondsRemaining()
     {
-        if (gamePhase.Value != (int)GamePhase.Memorize)
+        if (gamePhase.Value != (int)GamePhase.Memorize || currentPhaseEndTime.Value <= 0d)
+        {
+            return 0;
+        }
+
+        var remainingTime = Math.Max(0d, currentPhaseEndTime.Value - GetCurrentTime());
+        return Mathf.CeilToInt((float)remainingTime);
+    }
+
+    public bool HasMemorizeTimer()
+    {
+        return gamePhase.Value == (int)GamePhase.Memorize && currentPhaseEndTime.Value > 0d;
+    }
+
+    public int GetInvestigationSecondsRemaining()
+    {
+        if (gamePhase.Value != (int)GamePhase.Investigation || currentPhaseEndTime.Value <= 0d)
         {
             return 0;
         }
@@ -410,7 +345,7 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
         }
 
         EnsureRoomStateInitialized();
-        StartGameLoop();
+        ResumeOrStartMasterFlow();
     }
 
     private void ResolveReferences()
@@ -432,12 +367,246 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
         managerObject.AddComponent<PhotonScenePlayerSpawnManager>();
     }
 
-    private void StopGameLoop()
+    private void ResumeOrStartMasterFlow()
     {
-        if (gameLoopRoutine != null)
+        StopPhaseRoutine();
+
+        if (currentRound.Value <= 0)
         {
-            StopCoroutine(gameLoopRoutine);
-            gameLoopRoutine = null;
+            BeginMemorizeRound(1);
+            return;
+        }
+
+        switch ((GamePhase)gamePhase.Value)
+        {
+            case GamePhase.Memorize:
+                ScheduleMemorizeAdvanceIfNeeded();
+                break;
+            case GamePhase.SpawnLockdown:
+                phaseRoutine = StartCoroutine(SpawnLockdownRoutine());
+                break;
+            case GamePhase.Investigation:
+                phaseRoutine = StartCoroutine(InvestigationRoutine());
+                break;
+            case GamePhase.RoundTransition:
+                phaseRoutine = StartCoroutine(RoundTransitionRoutine());
+                break;
+            case GamePhase.Victory:
+                break;
+            default:
+                BeginMemorizeRound(1);
+                break;
+        }
+    }
+
+    private void BeginMemorizeRound(int roundNumber)
+    {
+        StopPhaseRoutine();
+
+        var clampedRound = Mathf.Clamp(roundNumber, 1, totalRounds);
+        SetCurrentScore(0);
+        SetCurrentRound(clampedRound);
+        SetProgressionPhase(GetProgressionPhaseForRound(clampedRound));
+        SetLastRoundOutcome(RoundOutcome.None);
+        SetAllSpawnPointsToNormal();
+        ResetChecklistOnly();
+
+        var phaseEndTime = useMemorizeTimer && memorizeDuration > 0f
+            ? GetCurrentTime() + memorizeDuration
+            : 0d;
+
+        SetPhaseState(GamePhase.Memorize, phaseEndTime);
+        ScheduleMemorizeAdvanceIfNeeded();
+    }
+
+    private void ScheduleMemorizeAdvanceIfNeeded()
+    {
+        StopPhaseRoutine();
+
+        if (gamePhase.Value != (int)GamePhase.Memorize || !CanWriteState())
+        {
+            return;
+        }
+
+        if (currentPhaseEndTime.Value <= 0d)
+        {
+            return;
+        }
+
+        phaseRoutine = StartCoroutine(AutoAdvanceMemorizeRoutine());
+    }
+
+    private IEnumerator AutoAdvanceMemorizeRoutine()
+    {
+        while (gamePhase.Value == (int)GamePhase.Memorize)
+        {
+            var remaining = currentPhaseEndTime.Value - GetCurrentTime();
+            if (remaining <= 0d)
+            {
+                AdvanceMemorizePhase();
+                yield break;
+            }
+
+            yield return null;
+        }
+    }
+
+    private IEnumerator SpawnLockdownRoutine()
+    {
+        while (gamePhase.Value == (int)GamePhase.SpawnLockdown)
+        {
+            var remaining = currentPhaseEndTime.Value - GetCurrentTime();
+            if (remaining <= 0d)
+            {
+                StartInvestigationPhase();
+                yield break;
+            }
+
+            yield return null;
+        }
+    }
+
+    private void StartInvestigationPhase()
+    {
+        if (!CanWriteState())
+        {
+            return;
+        }
+
+        StopPhaseRoutine();
+        SpawnRoundAnomalies(currentProgressionPhase.Value);
+        PrepareChecklistForRound();
+
+        var investigationDuration = GetExplorationDurationForCurrentPhase();
+        SetPhaseState(GamePhase.Investigation, GetCurrentTime() + investigationDuration);
+        phaseRoutine = StartCoroutine(InvestigationRoutine());
+    }
+
+    private IEnumerator InvestigationRoutine()
+    {
+        while (gamePhase.Value == (int)GamePhase.Investigation)
+        {
+            var remaining = currentPhaseEndTime.Value - GetCurrentTime();
+            if (remaining <= 0d)
+            {
+                ResolveChecklistSubmission();
+                yield break;
+            }
+
+            yield return null;
+        }
+    }
+
+    private IEnumerator RoundTransitionRoutine()
+    {
+        while (gamePhase.Value == (int)GamePhase.RoundTransition)
+        {
+            var remaining = currentPhaseEndTime.Value - GetCurrentTime();
+            if (remaining <= 0d)
+            {
+                AdvanceAfterRoundTransition();
+                yield break;
+            }
+
+            yield return null;
+        }
+    }
+
+    private void ResolveChecklistSubmission()
+    {
+        if (gamePhase.Value != (int)GamePhase.Investigation || checklistManager == null)
+        {
+            return;
+        }
+
+        StopPhaseRoutine();
+
+        var correct = checklistManager.EvaluateSubmission();
+        SetLastRoundOutcome(correct ? RoundOutcome.Correct : RoundOutcome.Wrong);
+
+        if (correct && currentRound.Value >= totalRounds)
+        {
+            SetPhaseState(GamePhase.Victory, 0d);
+            TryLoadVictoryScene();
+            return;
+        }
+
+        SetPhaseState(GamePhase.RoundTransition, GetCurrentTime() + transitionDelay);
+        phaseRoutine = StartCoroutine(RoundTransitionRoutine());
+    }
+
+    private void AdvanceAfterRoundTransition()
+    {
+        if (!CanWriteState())
+        {
+            return;
+        }
+
+        var nextRound = lastRoundOutcome == RoundOutcome.Correct
+            ? currentRound.Value + 1
+            : GetPhaseStartRound(GetProgressionPhaseForRound(currentRound.Value));
+
+        BeginMemorizeRound(nextRound);
+    }
+
+    private void SetAllSpawnPointsToNormal()
+    {
+        if (checklistManager == null)
+        {
+            return;
+        }
+
+        var count = checklistManager.GetPointCount();
+        for (var i = 0; i < count; i++)
+        {
+            var point = checklistManager.GetPoint(i);
+            if (point != null)
+            {
+                point.SpawnNormal();
+            }
+        }
+    }
+
+    private void SpawnRoundAnomalies(int progressionPhase)
+    {
+        if (checklistManager == null)
+        {
+            return;
+        }
+
+        var count = checklistManager.GetPointCount();
+        for (var i = 0; i < count; i++)
+        {
+            var point = checklistManager.GetPoint(i);
+            if (point != null)
+            {
+                point.RollAndSpawn(progressionPhase);
+            }
+        }
+    }
+
+    private void PrepareChecklistForRound()
+    {
+        if (checklistManager != null)
+        {
+            checklistManager.PrepareForNewRound();
+        }
+    }
+
+    private void ResetChecklistOnly()
+    {
+        if (checklistManager != null)
+        {
+            checklistManager.ResetOnlySelections();
+        }
+    }
+
+    private void StopPhaseRoutine()
+    {
+        if (phaseRoutine != null)
+        {
+            StopCoroutine(phaseRoutine);
+            phaseRoutine = null;
         }
     }
 
@@ -465,9 +634,19 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
             updates[PhaseKey] = (int)GamePhase.Memorize;
         }
 
+        if (!PhotonNetwork.CurrentRoom.CustomProperties.ContainsKey(ProgressionPhaseKey))
+        {
+            updates[ProgressionPhaseKey] = 1;
+        }
+
         if (!PhotonNetwork.CurrentRoom.CustomProperties.ContainsKey(PhaseEndTimeKey))
         {
             updates[PhaseEndTimeKey] = 0d;
+        }
+
+        if (!PhotonNetwork.CurrentRoom.CustomProperties.ContainsKey(RoundOutcomeKey))
+        {
+            updates[RoundOutcomeKey] = (int)RoundOutcome.None;
         }
 
         if (updates.Count > 0)
@@ -501,14 +680,43 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
             gamePhase.Value = ReadInt(properties, PhaseKey, (int)GamePhase.Memorize);
         }
 
+        if (properties.ContainsKey(ProgressionPhaseKey))
+        {
+            currentProgressionPhase.Value = ReadInt(properties, ProgressionPhaseKey, 1);
+        }
+
         if (properties.ContainsKey(PhaseEndTimeKey))
         {
             currentPhaseEndTime.Value = ReadDouble(properties, PhaseEndTimeKey, 0d);
         }
 
+        if (properties.ContainsKey(RoundOutcomeKey))
+        {
+            lastRoundOutcome = (RoundOutcome)ReadInt(properties, RoundOutcomeKey, (int)RoundOutcome.None);
+        }
+
         if (previousPhase != gamePhase.Value || previousRound != currentRound.Value)
         {
+            HandleLocalPhaseChange(previousPhase, gamePhase.Value);
             SyncLocalSubmissionFlagForCurrentPhase();
+        }
+    }
+
+    private void HandleLocalPhaseChange(int previousPhaseValue, int nextPhaseValue)
+    {
+        if (previousPhaseValue == nextPhaseValue)
+        {
+            return;
+        }
+
+        var nextPhase = (GamePhase)nextPhaseValue;
+        if (nextPhase == GamePhase.Memorize || nextPhase == GamePhase.SpawnLockdown)
+        {
+            var spawnManager = FindFirstObjectByType<PhotonScenePlayerSpawnManager>();
+            if (spawnManager != null)
+            {
+                spawnManager.TeleportLocalPlayerToAssignedSpawnPad();
+            }
         }
     }
 
@@ -522,6 +730,18 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
     {
         currentRound.Value = value;
         PushRoomState(RoundKey, value);
+    }
+
+    private void SetProgressionPhase(int value)
+    {
+        currentProgressionPhase.Value = Mathf.Clamp(value, 1, 3);
+        PushRoomState(ProgressionPhaseKey, currentProgressionPhase.Value);
+    }
+
+    private void SetLastRoundOutcome(RoundOutcome outcome)
+    {
+        lastRoundOutcome = outcome;
+        PushRoomState(RoundOutcomeKey, (int)outcome);
     }
 
     private void SetPhaseState(GamePhase phase, double phaseEndTime)
@@ -552,6 +772,47 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
         {
             { key, value }
         });
+    }
+
+    private int GetExplorationDurationForCurrentPhase()
+    {
+        return GetExplorationDurationForProgressionPhase(currentProgressionPhase.Value);
+    }
+
+    private int GetExplorationDurationForProgressionPhase(int progressionPhase)
+    {
+        return progressionPhase switch
+        {
+            1 => Mathf.CeilToInt(phaseOneExplorationDuration),
+            2 => Mathf.CeilToInt(phaseTwoExplorationDuration),
+            _ => Mathf.CeilToInt(phaseThreeExplorationDuration)
+        };
+    }
+
+    private int GetProgressionPhaseForRound(int roundNumber)
+    {
+        if (roundNumber >= phaseThreeStartRound)
+        {
+            return 3;
+        }
+
+        if (roundNumber >= phaseTwoStartRound)
+        {
+            return 2;
+        }
+
+        return 1;
+    }
+
+    private int GetPhaseStartRound(int progressionPhase)
+    {
+        return progressionPhase switch
+        {
+            1 => 1,
+            2 => phaseTwoStartRound,
+            3 => phaseThreeStartRound,
+            _ => 1
+        };
     }
 
     private static int ReadInt(PhotonHashtable properties, string key, int fallback)

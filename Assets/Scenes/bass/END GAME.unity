@@ -651,6 +651,7 @@ GameObject:
   - component: {fileID: 1992684963}
   - component: {fileID: 1992684962}
   - component: {fileID: 1992684961}
+  - component: {fileID: 1992684965}
   m_Layer: 5
   m_Name: END GAME
   m_TagString: Untagged
@@ -698,6 +699,23 @@ MonoBehaviour:
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
   m_PresetInfoIsWorld: 0
+--- !u!114 &1992684965
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1992684960}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 520fee52a2d147dfb20899567b87cc3f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EndGameSceneController
+  menuSceneName: Menu
+  lobbySceneName: Lobby
+  backToMenuButton: {fileID: 0}
+  backToLobbyButton: {fileID: 0}
+  titleText: {fileID: 1555648587}
 --- !u!223 &1992684963
 Canvas:
   m_ObjectHideFlags: 0

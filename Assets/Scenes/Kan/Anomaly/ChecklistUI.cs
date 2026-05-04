@@ -597,7 +597,13 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
         switch (phase)
         {
             case GameRoundManager.GamePhase.Memorize:
-                resultText.text = $"Memorize ({gameRoundManager.GetMemorizeSecondsRemaining()})";
+                resultText.text = gameRoundManager.HasMemorizeTimer()
+                    ? $"Memorize ({gameRoundManager.GetMemorizeSecondsRemaining()})"
+                    : "Memorize";
+                break;
+
+            case GameRoundManager.GamePhase.SpawnLockdown:
+                resultText.text = "Return to spawn...";
                 break;
 
             case GameRoundManager.GamePhase.Investigation:
@@ -605,7 +611,7 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
                 var expectedPlayers = gameRoundManager.GetExpectedSubmitterCount();
                 resultText.text = submittedCount > 0
                     ? $"wait.... ({submittedCount}/{expectedPlayers})"
-                    : "Choose\nanomalies";
+                    : $"Choose\nanomalies ({gameRoundManager.GetInvestigationSecondsRemaining()})";
                 break;
 
             case GameRoundManager.GamePhase.RoundTransition:

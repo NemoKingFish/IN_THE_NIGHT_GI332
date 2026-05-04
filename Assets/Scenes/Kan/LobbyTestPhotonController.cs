@@ -626,8 +626,6 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
         var roomProperties = PhotonNetwork.CurrentRoom.CustomProperties;
         var lobbyName = ReadString(roomProperties, LobbyNameKey, PhotonNetwork.CurrentRoom.Name);
         var passwordRequired = ReadBool(roomProperties, PasswordRequiredKey, false);
-        var passwordCode = ReadString(roomProperties, PasswordCodeKey, "");
-
         if (roomTitleText != null)
         {
             roomTitleText.text = lobbyName;
@@ -635,7 +633,7 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
 
         if (roomPasswordText != null)
         {
-            roomPasswordText.text = $"Password : {(passwordRequired ? passwordCode : "Open")}";
+            roomPasswordText.text = $"Password : {(passwordRequired ? "Required" : "Open")}";
         }
 
         if (roomPlayerCountText != null)
@@ -715,9 +713,9 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
 
         if (generatedPasswordInput != null)
         {
-            generatedPasswordInput.text = generatedPasswordCode;
+            generatedPasswordInput.text = string.Empty;
             generatedPasswordInput.interactable = false;
-            generatedPasswordInput.gameObject.SetActive(createPasswordToggle != null && createPasswordToggle.isOn);
+            generatedPasswordInput.gameObject.SetActive(false);
         }
     }
 
@@ -1271,7 +1269,7 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
         }
 
         var playerListPanelRect = FindChildRect(roomPanel.transform, "Player List Panel");
-        SetRectTransform(playerListPanelRect, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -8f), new Vector2(760f, 430f));
+        SetRectTransform(playerListPanelRect, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -8f), new Vector2(760f, 500f));
 
         if (playerListPanelRect != null)
         {
@@ -1311,14 +1309,14 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
                 slotRect.anchorMin = new Vector2(0f, 1f);
                 slotRect.anchorMax = new Vector2(1f, 1f);
                 slotRect.pivot = new Vector2(0.5f, 1f);
-                slotRect.sizeDelta = new Vector2(0f, 108f);
+                slotRect.sizeDelta = new Vector2(0f, 94f);
             }
 
             var layoutElement = slotRoot.GetComponent<LayoutElement>();
             if (layoutElement != null)
             {
-                layoutElement.preferredHeight = 108f;
-                layoutElement.minHeight = 108f;
+                layoutElement.preferredHeight = 94f;
+                layoutElement.minHeight = 94f;
             }
 
             var slotImage = slotRoot.GetComponent<Image>();

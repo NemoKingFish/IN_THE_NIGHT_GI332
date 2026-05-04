@@ -14,6 +14,7 @@ using UnityEditor;
 public class PhotonScenePlayerSpawnManager : MonoBehaviourPunCallbacks, IOnEventCallback
 {
     private const byte PlayerStateEventCode = 91;
+    private const string KanPlayerPrefabResourcesPath = "KanPlayerRuntime";
     private static PhotonScenePlayerSpawnManager instance;
 
     [Serializable]
@@ -93,6 +94,33 @@ public class PhotonScenePlayerSpawnManager : MonoBehaviourPunCallbacks, IOnEvent
         {
             instance = null;
         }
+    }
+
+    public void TeleportLocalPlayerToAssignedSpawnPad()
+    {
+        if (!PhotonNetwork.InRoom || PhotonNetwork.LocalPlayer == null)
+        {
+            return;
+        }
+
+        if (!avatarsByActorNumber.TryGetValue(PhotonNetwork.LocalPlayer.ActorNumber, out var avatar) || avatar == null || !avatar.IsLocalPlayer)
+        {
+            EnsurePlayerAvatars();
+            if (!avatarsByActorNumber.TryGetValue(PhotonNetwork.LocalPlayer.ActorNumber, out avatar) || avatar == null || !avatar.IsLocalPlayer)
+            {
+                return;
+            }
+        }
+
+        RefreshSpawnPads();
+        var spawnIndex = GetAssignedSpawnPadIndex(PhotonNetwork.LocalPlayer.ActorNumber);
+        var spawnPad = GetSpawnPadForAssignedIndex(spawnIndex);
+        if (spawnPad == null)
+        {
+            return;
+        }
+
+        TeleportAvatarToSpawnPad(avatar, spawnPad);
     }
 
     private void Start()
@@ -539,11 +567,24 @@ public class PhotonScenePlayerSpawnManager : MonoBehaviourPunCallbacks, IOnEvent
 
     private static GameObject TryResolveKanPlayerPrefab()
     {
+        var resourcesPrefab = Resources.Load<GameObject>(KanPlayerPrefabResourcesPath);
+        if (resourcesPrefab != null)
+        {
+            return resourcesPrefab;
+        }
+
 #if UNITY_EDITOR
         var editorPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Scenes/Kan/Player.prefab");
         if (editorPrefab != null)
         {
             Debug.Log("[PhotonScenePlayerSpawnManager] Using Assets/Scenes/Kan/Player.prefab for Photon spawn.");
+            return editorPrefab;
+        }
+
+        editorPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Network_PlayerArmature.prefab");
+        if (editorPrefab != null)
+        {
+            Debug.Log("[PhotonScenePlayerSpawnManager] Using Assets/Prefabs/Network_PlayerArmature.prefab for Photon spawn.");
             return editorPrefab;
         }
 #endif
@@ -552,7 +593,7 @@ public class PhotonScenePlayerSpawnManager : MonoBehaviourPunCallbacks, IOnEvent
         for (var i = 0; i < loadedObjects.Length; i++)
         {
             var candidate = loadedObjects[i];
-            if (candidate == null || candidate.name != "Player")
+            if (candidate == null || !IsSupportedPlayerCandidateName(candidate.name))
             {
                 continue;
             }
@@ -664,6 +705,28 @@ public class PhotonScenePlayerSpawnManager : MonoBehaviourPunCallbacks, IOnEvent
         return typeName == nameof(PhotonScenePlayerAvatar);
     }
 
+    private static void TeleportAvatarToSpawnPad(PhotonScenePlayerAvatar avatar, Transform spawnPad)
+    {
+        if (avatar == null || spawnPad == null)
+        {
+            return;
+        }
+
+        var controller = avatar.GetComponent<CharacterController>();
+        if (controller != null)
+        {
+            controller.enabled = false;
+        }
+
+        avatar.transform.SetPositionAndRotation(spawnPad.position, spawnPad.rotation);
+        avatar.ResetMotionState();
+
+        if (controller != null)
+        {
+            controller.enabled = true;
+        }
+    }
+
     private static GameObject TryResolveLegacyPlayerPrefab()
     {
         var behaviours = FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None);
@@ -741,6 +804,12 @@ public class PhotonScenePlayerSpawnManager : MonoBehaviourPunCallbacks, IOnEvent
         visual.transform.localRotation = Quaternion.identity;
         visual.transform.localScale = new Vector3(0.8f, 0.9f, 0.8f);
 
+        var visualRenderer = visual.GetComponent<Renderer>();
+        if (visualRenderer != null)
+        {
+            visualRenderer.sharedMaterial = CreateFallbackAvatarMaterial();
+        }
+
         var visualCollider = visual.GetComponent<Collider>();
         if (visualCollider != null)
         {
@@ -758,7 +827,46 @@ public class PhotonScenePlayerSpawnManager : MonoBehaviourPunCallbacks, IOnEvent
         nameLabel.alignment = TextAlignmentOptions.Center;
         nameLabel.fontSize = 3f;
         nameLabel.color = Color.white;
+        nameLabel.outlineWidth = 0.2f;
+        nameLabel.outlineColor = Color.black;
 
         return root;
+    }
+
+    private static bool IsSupportedPlayerCandidateName(string candidateName)
+    {
+        if (string.IsNullOrWhiteSpace(candidateName))
+        {
+            return false;
+        }
+
+        return string.Equals(candidateName, "Player", StringComparison.Ordinal) ||
+               string.Equals(candidateName, "Network_PlayerArmature", StringComparison.Ordinal);
+    }
+
+    private static Material CreateFallbackAvatarMaterial()
+    {
+        var shader = Shader.Find("Universal Render Pipeline/Lit");
+        if (shader == null)
+        {
+            shader = Shader.Find("Universal Render Pipeline/Simple Lit");
+        }
+
+        if (shader == null)
+        {
+            shader = Shader.Find("Standard");
+        }
+
+        if (shader == null)
+        {
+            shader = Shader.Find("Sprites/Default");
+        }
+
+        var material = shader != null
+            ? new Material(shader)
+            : new Material(Shader.Find("Hidden/InternalErrorShader"));
+        material.name = "PhotonFallbackAvatarMaterial";
+        material.color = new Color(0.18f, 0.72f, 0.96f, 1f);
+        return material;
     }
 }
