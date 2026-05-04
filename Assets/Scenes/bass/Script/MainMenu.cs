@@ -8,6 +8,7 @@ public class MainMenu : MonoBehaviour
     public GameObject joinGamePanel;  
     public GameObject settingsPanel;
     public GameObject tutorialPanel;
+    public GameObject BacktolobbyPanel;
 
     void Start()
     {
@@ -46,6 +47,12 @@ public class MainMenu : MonoBehaviour
         startPanel.SetActive(false);
         joinGamePanel.SetActive(false);
         settingsPanel.SetActive(false);
+    }
+
+    public void OnBacktolobbyClick()
+    {
+        menuPanel.SetActive(false);
+        BacktolobbyPanel.SetActive(true);
     }
 
     public void OnQuitClick()
