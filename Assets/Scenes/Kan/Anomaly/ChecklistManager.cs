@@ -122,6 +122,11 @@ public class ChecklistManager : MonoBehaviourPunCallbacks, IOnEventCallback
         return checklistTypes != null ? checklistTypes.Length : 0;
     }
 
+    public int GetPointCount()
+    {
+        return anomalyPoints != null ? anomalyPoints.Length : 0;
+    }
+
     public string GetItemName(int index)
     {
         if (checklistTypes == null || index < 0 || index >= checklistTypes.Length)

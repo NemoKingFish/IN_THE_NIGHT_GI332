@@ -11,6 +11,7 @@ public class AnomalySpawnPointEditor : Editor
     private SerializedProperty anomalyIdProperty;
     private SerializedProperty anomalyNameProperty;
     private SerializedProperty assignedAnomalyTypeProperty;
+    private SerializedProperty anomalyPhaseProperty;
     private SerializedProperty anomalyChanceProperty;
     private SerializedProperty movedLocalPositionOffsetProperty;
     private SerializedProperty movedLocalEulerOffsetProperty;
@@ -23,6 +24,7 @@ public class AnomalySpawnPointEditor : Editor
         anomalyIdProperty = serializedObject.FindProperty("anomalyID");
         anomalyNameProperty = serializedObject.FindProperty("anomalyName");
         assignedAnomalyTypeProperty = serializedObject.FindProperty("assignedAnomalyType");
+        anomalyPhaseProperty = serializedObject.FindProperty("anomalyPhase");
         anomalyChanceProperty = serializedObject.FindProperty("anomalyChance");
         movedLocalPositionOffsetProperty = serializedObject.FindProperty("movedLocalPositionOffset");
         movedLocalEulerOffsetProperty = serializedObject.FindProperty("movedLocalEulerOffset");
@@ -85,6 +87,7 @@ public class AnomalySpawnPointEditor : Editor
 
         EditorGUILayout.HelpBox("Anomaly ID runs automatically from 1 and avoids duplicates in Edit Mode. Anomaly Name follows the current object name automatically.", MessageType.None);
         EditorGUILayout.PropertyField(assignedAnomalyTypeProperty, new GUIContent("Assigned Anomaly Type"));
+        EditorGUILayout.IntSlider(anomalyPhaseProperty, 1, 3, new GUIContent("Anomaly Phase"));
 
         EditorGUILayout.Space(4f);
         EditorGUILayout.Slider(anomalyChanceProperty, 0f, 100f, new GUIContent("Anomaly Chance"));

@@ -2,6 +2,52 @@
 
 ## Purpose
 
+### Implementation Update 2026-05-04
+
+- Implemented a new round-flow in code around `GameRoundManager`:
+  - 7 rounds total
+  - phase progression 1/2/3 by round number
+  - wrong answer returns to the start round of the current phase
+  - score is no longer used for progression
+  - added `SpawnLockdown` stage between memorize and investigation
+- Added anomaly phase filtering in `AnomalySpawnPoint`
+- Added local spawn-pad teleport hooks for phase resets in `PhotonScenePlayerSpawnManager`
+- Added code-only door helpers:
+  - `PhaseDoorController`
+  - `PhaseAccessManager`
+- Added rough ending controller:
+  - `EndGameSceneController`
+- Added in-game victory UI flow in gameplay canvas:
+  - `GameEndPanelUI`
+  - attached to `Assets/Scenes/Kan/Gameplay/Canvas.prefab`
+  - shows `Back To Menu` and `Back To Lobby` when the game reaches `Victory`
+  - `Canvas.prefab` now contains a real editable `GameEndPanel` hierarchy
+  - `GameEndPanelUI` now prefers prefab references and only falls back to runtime creation if those references are missing
+- Added memorize helper UI:
+  - `MemorizePhaseAdvanceUI`
+  - attached to `Assets/Scenes/Kan/Gameplay/Manager.prefab`
+  - shows a `Start Investigation` button during manual memorize phase
+- Added three test anomaly prefabs in `Assets/Scenes/Kan/Gameplay/`
+  - `TestAnomalyCube.prefab`
+  - `TestAnomalySphere.prefab`
+  - `TestAnomalyCapsule.prefab`
+- Fixed the custom anomaly inspector so `Anomaly Phase` is visible and editable in Unity
+- Applied code-side bug fixes:
+  - room password text no longer reveals the actual password
+  - generated password field is hidden in create-room UI
+  - room panel slot layout was enlarged/tightened for 4 players
+  - player name label now billboards toward the camera
+  - fixed the name-label facing direction so remote player names no longer appear mirrored
+  - added another Photon player-prefab fallback path through `Assets/Prefabs/Network_PlayerArmature.prefab`
+  - improved runtime fallback player visuals so missing-prefab cases render as a readable blue placeholder instead of a bright magenta capsule
+
+### Still Needs Scene Wiring / Validation
+
+- Memorize phase is now designed to support manual advance, but existing scenes may still need UI/button/trigger hookup to call `AdvanceMemorizePhase()`.
+- Door scripts were added, but scene references still need to be assigned in Unity.
+- The old separate `END GAME` scene is no longer required for the main win flow.
+- Phase-based door opening and spawn-room locking should be tested in the actual target scene.
+
 ไฟล์นี้ใช้เป็นแหล่งอ้างอิงกลางของโปรเจกต์ `IN THE NIGHT` เพื่อช่วยลดการอธิบายซ้ำ ลดการคลาดเคลื่อนของ scope งาน และใช้สรุปสถานะล่าสุดของโปรเจกต์ได้เร็วในอนาคต
 
 ควรอัปเดตไฟล์นี้เมื่อมีการเปลี่ยนแปลงเรื่อง:
@@ -535,6 +581,13 @@ capture ที่ตรวจเป็นลักษณะ `Editor / Deep Profi
 - ตรวจ material / shader ที่หายหรือไม่รองรับ
 - ตรวจการหมุนของ name label / canvas / text ให้หันเข้ากล้องหรือหันถูกทิศ
 
+Current code-side status:
+
+- `PhotonScenePlayerAvatar` now rotates the name label toward the camera with the correct forward direction
+- `PhotonScenePlayerSpawnManager` now tries both `Assets/Scenes/Kan/Player.prefab` and `Assets/Prefabs/Network_PlayerArmature.prefab` before falling back
+- if no compatible prefab resolves at runtime, the fallback avatar now uses an explicit material and no longer shows as a bright magenta capsule
+- if the real humanoid still does not appear in build, the remaining missing piece is a runtime-loadable prefab reference instead of editor-only asset lookup
+
 ### Bug 2: Password Display / Password Flow
 
 อาการ:
@@ -568,6 +621,11 @@ capture ที่ตรวจเป็นลักษณะ `Editor / Deep Profi
 - ขยาย panel หลัก
 - ปรับ layout ของ player slot สำหรับ 4 คนเต็ม
 - ตรวจ responsive / safe spacing ของข้อความและ input fields
+
+Current code-side status:
+
+- `LobbyTestPhotonController` already enlarges the room panel, increases player-list height, and reduces each slot height to fit 4 players more safely
+- room summaries and room headers now show password state only as `Require/Open`
 
 ---
 
