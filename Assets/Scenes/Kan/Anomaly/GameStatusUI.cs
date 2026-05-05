@@ -1,9 +1,13 @@
 using TMPro;
+using Photon.Pun;
 using UnityEngine;
 
 public class GameStatusUI : MonoBehaviour
 {
+    private const string PasswordCodeKey = "PasswordCode";
+
     [SerializeField] private GameRoundManager gameRoundManager;
+    [SerializeField] private TextMeshProUGUI roomPasswordText;
     [SerializeField] private TextMeshProUGUI scoreText;
     [SerializeField] private TextMeshProUGUI roundText;
     [SerializeField] private TextMeshProUGUI phaseText;
@@ -47,6 +51,18 @@ public class GameStatusUI : MonoBehaviour
         {
             scoreText = FindNamedText("ScoreText");
         }
+
+        if (roomPasswordText == null)
+        {
+            roomPasswordText = FindNamedText("RoomPasswordText");
+        }
+
+        if (roomPasswordText == null)
+        {
+            roomPasswordText = CreateRoomPasswordText();
+        }
+
+        ConfigureRoomPasswordTextLayout();
 
         if (roundText == null)
         {
@@ -97,6 +113,11 @@ public class GameStatusUI : MonoBehaviour
 
     private void RefreshUI()
     {
+        if (roomPasswordText != null)
+        {
+            roomPasswordText.text = $"Password : {GetCurrentRoomPassword()}";
+        }
+
         if (gameRoundManager == null)
         {
             return;
@@ -146,5 +167,66 @@ public class GameStatusUI : MonoBehaviour
         }
 
         return null;
+    }
+
+    private string GetCurrentRoomPassword()
+    {
+        if (PhotonNetwork.CurrentRoom == null || PhotonNetwork.CurrentRoom.CustomProperties == null)
+        {
+            return "None";
+        }
+
+        if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(PasswordCodeKey, out var passwordValue) &&
+            passwordValue is string passwordText &&
+            !string.IsNullOrWhiteSpace(passwordText))
+        {
+            return passwordText;
+        }
+
+        return "None";
+    }
+
+    private TextMeshProUGUI CreateRoomPasswordText()
+    {
+        var textObject = new GameObject("RoomPasswordText", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+        var rootCanvas = GetComponentInParent<Canvas>()?.rootCanvas;
+        var parentTransform = rootCanvas != null ? rootCanvas.transform : (scoreText != null ? scoreText.transform.parent : transform);
+        textObject.transform.SetParent(parentTransform, false);
+
+        var text = textObject.GetComponent<TextMeshProUGUI>();
+        text.text = "Password : None";
+        text.fontSize = 28f;
+        text.alignment = TextAlignmentOptions.TopLeft;
+        text.color = Color.white;
+        text.raycastTarget = false;
+
+        ConfigureRoomPasswordTextLayout(text);
+
+        return text;
+    }
+
+    private void ConfigureRoomPasswordTextLayout()
+    {
+        ConfigureRoomPasswordTextLayout(roomPasswordText);
+    }
+
+    private void ConfigureRoomPasswordTextLayout(TextMeshProUGUI text)
+    {
+        if (text == null || text.rectTransform == null)
+        {
+            return;
+        }
+
+        var rootCanvas = GetComponentInParent<Canvas>()?.rootCanvas;
+        if (rootCanvas != null && text.transform.parent != rootCanvas.transform)
+        {
+            text.transform.SetParent(rootCanvas.transform, false);
+        }
+
+        text.rectTransform.anchorMin = new Vector2(0f, 1f);
+        text.rectTransform.anchorMax = new Vector2(0f, 1f);
+        text.rectTransform.pivot = new Vector2(0f, 1f);
+        text.rectTransform.anchoredPosition = new Vector2(8f, -8f);
+        text.rectTransform.sizeDelta = new Vector2(420f, 40f);
     }
 }

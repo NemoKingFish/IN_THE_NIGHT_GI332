@@ -625,7 +625,7 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
 
         var roomProperties = PhotonNetwork.CurrentRoom.CustomProperties;
         var lobbyName = ReadString(roomProperties, LobbyNameKey, PhotonNetwork.CurrentRoom.Name);
-        var passwordRequired = ReadBool(roomProperties, PasswordRequiredKey, false);
+        var roomPassword = ReadRoomPassword(roomProperties);
         if (roomTitleText != null)
         {
             roomTitleText.text = lobbyName;
@@ -633,7 +633,7 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
 
         if (roomPasswordText != null)
         {
-            roomPasswordText.text = $"Password : {(passwordRequired ? "Required" : "Open")}";
+            roomPasswordText.text = $"Password : {roomPassword}";
         }
 
         if (roomPlayerCountText != null)
@@ -896,6 +896,12 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
         return fallback;
     }
 
+    private static string ReadRoomPassword(PhotonHashtable properties)
+    {
+        var passwordCode = ReadString(properties, PasswordCodeKey, string.Empty);
+        return string.IsNullOrWhiteSpace(passwordCode) ? "None" : passwordCode;
+    }
+
     private void ApplyButtonBorder(Button button, Color borderColor)
     {
         if (button == null)
@@ -919,7 +925,7 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
 
         if (roomPasswordText != null)
         {
-            roomPasswordText.text = "Password : Open";
+            roomPasswordText.text = "Password : None";
         }
 
         if (roomPlayerCountText != null)

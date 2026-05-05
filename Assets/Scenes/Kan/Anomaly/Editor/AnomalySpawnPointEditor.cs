@@ -15,6 +15,10 @@ public class AnomalySpawnPointEditor : Editor
     private SerializedProperty anomalyChanceProperty;
     private SerializedProperty movedLocalPositionOffsetProperty;
     private SerializedProperty movedLocalEulerOffsetProperty;
+    private SerializedProperty overrideChangedObjectScaleProperty;
+    private SerializedProperty changedObjectScaleMultiplierProperty;
+    private SerializedProperty overrideChangedObjectColorProperty;
+    private SerializedProperty changedObjectColorProperty;
 
     private void OnEnable()
     {
@@ -28,6 +32,10 @@ public class AnomalySpawnPointEditor : Editor
         anomalyChanceProperty = serializedObject.FindProperty("anomalyChance");
         movedLocalPositionOffsetProperty = serializedObject.FindProperty("movedLocalPositionOffset");
         movedLocalEulerOffsetProperty = serializedObject.FindProperty("movedLocalEulerOffset");
+        overrideChangedObjectScaleProperty = serializedObject.FindProperty("overrideChangedObjectScale");
+        changedObjectScaleMultiplierProperty = serializedObject.FindProperty("changedObjectScaleMultiplier");
+        overrideChangedObjectColorProperty = serializedObject.FindProperty("overrideChangedObjectColor");
+        changedObjectColorProperty = serializedObject.FindProperty("changedObjectColor");
     }
 
     public override void OnInspectorGUI()
@@ -103,6 +111,31 @@ public class AnomalySpawnPointEditor : Editor
         if (anomalyType != AnomalyType.MovedObject)
         {
             EditorGUILayout.HelpBox("Moved offsets are active only when Assigned Anomaly Type is set to MovedObject.", MessageType.None);
+        }
+
+        EditorGUILayout.Space(4f);
+        using (new EditorGUI.DisabledScope(anomalyType != AnomalyType.ChangedObject))
+        {
+            EditorGUILayout.PropertyField(overrideChangedObjectScaleProperty, new GUIContent("Override Changed Scale"));
+            if (overrideChangedObjectScaleProperty.boolValue)
+            {
+                EditorGUILayout.PropertyField(changedObjectScaleMultiplierProperty, new GUIContent("Changed Scale Multiplier"));
+            }
+
+            EditorGUILayout.PropertyField(overrideChangedObjectColorProperty, new GUIContent("Override Changed Color"));
+            if (overrideChangedObjectColorProperty.boolValue)
+            {
+                EditorGUILayout.PropertyField(changedObjectColorProperty, new GUIContent("Changed Color"));
+            }
+        }
+
+        if (anomalyType == AnomalyType.ChangedObject)
+        {
+            EditorGUILayout.HelpBox("Changed Object can now reuse the normal object and apply optional scale/color overrides directly from the Inspector. Anomaly Prefab is optional for this type.", MessageType.None);
+        }
+        else
+        {
+            EditorGUILayout.HelpBox("Changed Object overrides are active only when Assigned Anomaly Type is set to ChangedObject.", MessageType.None);
         }
 
         EditorGUILayout.Space(6f);

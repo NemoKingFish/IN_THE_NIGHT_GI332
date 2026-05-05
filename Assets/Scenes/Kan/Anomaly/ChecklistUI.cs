@@ -39,6 +39,7 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
     private readonly List<ChecklistItemUI> spawnedItems = new List<ChecklistItemUI>();
     private bool initialized;
     private bool localSubmitLock;
+    private int observedChecklistRevision = -1;
 
     private IEnumerator Start()
     {
@@ -86,6 +87,7 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
 
         checklistManager.checkedMask.OnValueChanged += OnCheckedMaskChanged;
         checklistManager.matchResult.OnValueChanged += OnMatchResultChanged;
+        checklistManager.AnomalyDataChanged += OnAnomalyDataChanged;
         gameRoundManager.gamePhase.OnValueChanged += OnGamePhaseChanged;
 
         RefreshAllItems();
@@ -103,6 +105,11 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
         if (!initialized || !IsSessionReady())
         {
             return;
+        }
+
+        if (checklistManager != null && observedChecklistRevision != checklistManager.DataRevision)
+        {
+            RebuildChecklistItems();
         }
 
         if (Input.GetKeyDown(toggleKey))
@@ -132,6 +139,7 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
         {
             checklistManager.checkedMask.OnValueChanged -= OnCheckedMaskChanged;
             checklistManager.matchResult.OnValueChanged -= OnMatchResultChanged;
+            checklistManager.AnomalyDataChanged -= OnAnomalyDataChanged;
         }
 
         if (gameRoundManager != null)
@@ -304,11 +312,11 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
 
             if (titleText.rectTransform != null)
             {
-                titleText.rectTransform.anchorMin = new Vector2(0.5f, 1f);
-                titleText.rectTransform.anchorMax = new Vector2(0.5f, 1f);
+                titleText.rectTransform.anchorMin = new Vector2(0.18f, 1f);
+                titleText.rectTransform.anchorMax = new Vector2(0.82f, 1f);
                 titleText.rectTransform.pivot = new Vector2(0.5f, 1f);
-                titleText.rectTransform.anchoredPosition = new Vector2(0f, -18f);
-                titleText.rectTransform.sizeDelta = new Vector2(760f, 88f);
+                titleText.rectTransform.offsetMin = new Vector2(0f, -106f);
+                titleText.rectTransform.offsetMax = new Vector2(0f, -18f);
             }
         }
 
@@ -439,6 +447,17 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
         }
 
         EnforceVerticalOnlyScroll();
+        observedChecklistRevision = checklistManager.DataRevision;
+    }
+
+    private void RebuildChecklistItems()
+    {
+        BuildUI();
+        RefreshAllItems();
+        RefreshUIState();
+        RefreshResultText();
+        RefreshSubmitPresentation();
+        RefreshSelectionPresentation();
     }
 
     private void ConfigureScrollViewBounds()
@@ -674,6 +693,16 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
         RefreshResultText();
         RefreshSubmitPresentation();
         RefreshSelectionPresentation();
+    }
+
+    private void OnAnomalyDataChanged()
+    {
+        if (!initialized)
+        {
+            return;
+        }
+
+        RebuildChecklistItems();
     }
 
     public void OnToggleChanged(int index, bool value)
