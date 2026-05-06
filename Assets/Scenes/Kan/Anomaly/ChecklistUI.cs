@@ -258,11 +258,6 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
             titleText = FindNamedChildComponent<TextMeshProUGUI>(checklistWindow.transform, "TitleText");
         }
 
-        if (checklistWindow != null && titleText == null)
-        {
-            titleText = CreateTitleText(checklistWindow.transform);
-        }
-
         if (submitButton != null && submitButtonText == null)
         {
             submitButtonText = submitButton.GetComponentInChildren<TextMeshProUGUI>(true);
@@ -793,19 +788,6 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
         }
 
         return null;
-    }
-
-    private static TextMeshProUGUI CreateTitleText(Transform parent)
-    {
-        var titleObject = new GameObject("TitleText", typeof(RectTransform), typeof(TextMeshProUGUI));
-        titleObject.transform.SetParent(parent, false);
-        var title = titleObject.GetComponent<TextMeshProUGUI>();
-        title.text = "Check List";
-        title.fontSize = 58f;
-        title.color = Color.black;
-        title.alignment = TextAlignmentOptions.Center;
-        title.raycastTarget = false;
-        return title;
     }
 
     private static void EnsureEventSystemExists()

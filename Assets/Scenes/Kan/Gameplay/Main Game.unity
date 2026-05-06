@@ -56382,11 +56382,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4944105091187115091, guid: 6b2793ed3edc0a8488890b94960baae1, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -175
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4944105091187115091, guid: 6b2793ed3edc0a8488890b94960baae1, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 502
+      value: -22.978027
       objectReference: {fileID: 0}
     - target: {fileID: 5272741128897237936, guid: 6b2793ed3edc0a8488890b94960baae1, type: 3}
       propertyPath: m_AnchorMax.y
@@ -88020,11 +88020,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AnomalySpawnPoint
   preferSceneObjectAsNormal: 1
   normalPrefab: {fileID: 0}
-  anomalyPrefab: {fileID: 0}
+  anomalyPrefab: {fileID: 7852489608970489576, guid: 6a1b24ab22faf9046a21be7f89783dee, type: 3}
   anomalyID: 1
   anomalyName: Anomaly 1
-  assignedAnomalyType: 1
-  assignedAnomalyTypes: 01000000
+  assignedAnomalyType: 4
+  assignedAnomalyTypes: 04000000
   anomalyPhase: 1
   anomalyChance: 30
   movedLocalPositionOffset: {x: 0, y: 0, z: 0}
@@ -94861,7 +94861,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1174788785339261045, guid: 116564c36e2743f4896e3b9a1089582f, type: 3}
       propertyPath: m_fontColor32.rgba
-      value: 4279900698
+      value: 4291546059
       objectReference: {fileID: 0}
     - target: {fileID: 1174788785339261045, guid: 116564c36e2743f4896e3b9a1089582f, type: 3}
       propertyPath: m_TextStyleHashCode
@@ -160308,6 +160308,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1457974297271282087, guid: 4d66487cc0a8b8844901b094f3c34726, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1574694912438921581, guid: 4d66487cc0a8b8844901b094f3c34726, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2303710355904876483, guid: 4d66487cc0a8b8844901b094f3c34726, type: 3}
       propertyPath: m_Name
       value: Phase3 Group
@@ -160330,15 +160338,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2379998487170615521, guid: 4d66487cc0a8b8844901b094f3c34726, type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2379998487170615521, guid: 4d66487cc0a8b8844901b094f3c34726, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2379998487170615521, guid: 4d66487cc0a8b8844901b094f3c34726, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2379998487170615521, guid: 4d66487cc0a8b8844901b094f3c34726, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -160351,6 +160359,30 @@ PrefabInstance:
     - target: {fileID: 2379998487170615521, guid: 4d66487cc0a8b8844901b094f3c34726, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2941900703481378059, guid: 4d66487cc0a8b8844901b094f3c34726, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3128118107199458976, guid: 4d66487cc0a8b8844901b094f3c34726, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3590399921403148147, guid: 4d66487cc0a8b8844901b094f3c34726, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5263898763609332173, guid: 4d66487cc0a8b8844901b094f3c34726, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5314521919851532406, guid: 4d66487cc0a8b8844901b094f3c34726, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6768658378182183851, guid: 4d66487cc0a8b8844901b094f3c34726, type: 3}
+      propertyPath: m_Enabled
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
