@@ -261,6 +261,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameStatusUI
   gameRoundManager: {fileID: 0}
+  roomPasswordText: {fileID: 0}
   scoreText: {fileID: 4102036051324961465}
   roundText: {fileID: 6943997823412593167}
   phaseText: {fileID: 8134024095256085364}

@@ -13,6 +13,7 @@ public class GameStatusUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI phaseText;
 
     private bool subscribed;
+    private bool createdRoomPasswordTextAtRuntime;
 
     private void Start()
     {
@@ -60,9 +61,13 @@ public class GameStatusUI : MonoBehaviour
         if (roomPasswordText == null)
         {
             roomPasswordText = CreateRoomPasswordText();
+            createdRoomPasswordTextAtRuntime = roomPasswordText != null;
         }
 
-        ConfigureRoomPasswordTextLayout();
+        if (createdRoomPasswordTextAtRuntime)
+        {
+            ConfigureRoomPasswordTextLayout();
+        }
 
         if (roundText == null)
         {

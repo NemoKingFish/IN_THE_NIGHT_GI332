@@ -10,6 +10,17 @@ using UnityEditor;
 
 public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
 {
+    [System.Serializable]
+    private class SpatialAudioSettings
+    {
+        public bool enabled;
+        public AudioClip clip;
+        [Range(0f, 1f)] public float volume = 1f;
+        [Min(0f)] public float minDistance = 1f;
+        [Min(0.01f)] public float maxDistance = 12f;
+        public bool loop = true;
+    }
+
     private static readonly int BaseColorPropertyId = Shader.PropertyToID("_BaseColor");
     private static readonly int ColorPropertyId = Shader.PropertyToID("_Color");
 
@@ -39,6 +50,10 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
     [SerializeField] private bool overrideChangedObjectColor;
     [SerializeField] private Color changedObjectColor = Color.white;
 
+    [Header("Audio")]
+    [SerializeField] private SpatialAudioSettings normalAudioSettings = new SpatialAudioSettings();
+    [SerializeField] private SpatialAudioSettings anomalyAudioSettings = new SpatialAudioSettings();
+
     [Header("Editor Preview")]
     [SerializeField] private bool previewAnomalyInEditMode;
 
@@ -58,6 +73,7 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
     private Collider2D[] managedColliders2D;
     private Canvas[] managedCanvases;
     private Light[] managedLights;
+    private AudioSource managedAudioSource;
 #if UNITY_EDITOR
     private bool editorPreviewRefreshQueued;
     private bool suppressEditorOriginalTransformCapture;
@@ -178,6 +194,7 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
     private void ApplyLocalState(int nextId, string nextName, AnomalyType nextType)
     {
         ApplyPresentation(nextType);
+        ApplyAudioPresentation(nextType);
         currentAnomalyID.Value = nextId;
         currentAnomalyName.Value = nextName;
         currentAnomalyType.Value = (int)nextType;
@@ -241,6 +258,12 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
             return;
         }
 
+        if (nextType == AnomalyType.StrangeSound && anomalyPrefab == null)
+        {
+            ApplyStrangeSoundPresentation(anomalyLocalPosition, anomalyLocalRotation);
+            return;
+        }
+
         var prefabToSpawn = ResolveAnomalyPrefab(nextType);
 
         SetSceneObjectVisible(false);
@@ -248,6 +271,23 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
         if (prefabToSpawn != null)
         {
             currentSpawnedObject = InstantiateManagedPrefab(prefabToSpawn, anomalyLocalPosition, anomalyLocalRotation, false);
+        }
+    }
+
+    private void ApplyStrangeSoundPresentation(Vector3 anomalyLocalPosition, Quaternion anomalyLocalRotation)
+    {
+        if (useSceneObjectAsNormal)
+        {
+            SetSceneObjectVisible(true);
+            ApplySceneObjectTransform(anomalyLocalPosition, anomalyLocalRotation);
+            return;
+        }
+
+        SetSceneObjectVisible(false);
+
+        if (normalPrefab != null)
+        {
+            currentSpawnedObject = InstantiateManagedPrefab(normalPrefab, anomalyLocalPosition, anomalyLocalRotation, true);
         }
     }
 
@@ -393,6 +433,110 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
         managedColliders2D = GetComponentsInChildren<Collider2D>(true);
         managedCanvases = GetComponentsInChildren<Canvas>(true);
         managedLights = GetComponentsInChildren<Light>(true);
+    }
+
+    private void ApplyAudioPresentation(AnomalyType nextType)
+    {
+        var settings = nextType == AnomalyType.None ? normalAudioSettings : anomalyAudioSettings;
+        if (!HasAudioSettings(settings))
+        {
+            StopManagedAudio();
+            return;
+        }
+
+        var targetAnchor = currentSpawnedObject != null ? currentSpawnedObject.transform : transform;
+        if (targetAnchor == null)
+        {
+            StopManagedAudio();
+            return;
+        }
+
+        var audioSource = EnsureManagedAudioSource(targetAnchor);
+        if (audioSource == null)
+        {
+            return;
+        }
+
+        ConfigureAudioSource(audioSource, settings);
+
+        if (audioSource.clip != settings.clip)
+        {
+            audioSource.Stop();
+            audioSource.clip = settings.clip;
+        }
+
+        if (!audioSource.isPlaying)
+        {
+            audioSource.Play();
+        }
+    }
+
+    private static bool HasAudioSettings(SpatialAudioSettings settings)
+    {
+        return settings != null && settings.enabled && settings.clip != null;
+    }
+
+    private AudioSource EnsureManagedAudioSource(Transform targetAnchor)
+    {
+        if (targetAnchor == null)
+        {
+            return null;
+        }
+
+        if (managedAudioSource == null)
+        {
+            managedAudioSource = GetComponentInChildren<AudioSource>(true);
+
+            if (managedAudioSource == null || managedAudioSource.gameObject.name != "__AnomalyManagedAudio")
+            {
+                var audioObject = new GameObject("__AnomalyManagedAudio", typeof(AudioSource));
+                managedAudioSource = audioObject.GetComponent<AudioSource>();
+            }
+        }
+
+        if (managedAudioSource == null)
+        {
+            return null;
+        }
+
+        var audioTransform = managedAudioSource.transform;
+        if (audioTransform.parent != targetAnchor)
+        {
+            audioTransform.SetParent(targetAnchor, false);
+        }
+
+        audioTransform.localPosition = Vector3.zero;
+        audioTransform.localRotation = Quaternion.identity;
+
+        return managedAudioSource;
+    }
+
+    private static void ConfigureAudioSource(AudioSource audioSource, SpatialAudioSettings settings)
+    {
+        if (audioSource == null || settings == null)
+        {
+            return;
+        }
+
+        audioSource.playOnAwake = false;
+        audioSource.spatialBlend = 1f;
+        audioSource.rolloffMode = AudioRolloffMode.Logarithmic;
+        audioSource.dopplerLevel = 0f;
+        audioSource.loop = settings.loop;
+        audioSource.volume = Mathf.Clamp01(settings.volume);
+        audioSource.minDistance = Mathf.Max(0f, settings.minDistance);
+        audioSource.maxDistance = Mathf.Max(audioSource.minDistance + 0.01f, settings.maxDistance);
+    }
+
+    private void StopManagedAudio()
+    {
+        if (managedAudioSource == null)
+        {
+            return;
+        }
+
+        managedAudioSource.Stop();
+        managedAudioSource.clip = null;
     }
 
     private void RestoreSceneObjectAppearance()
@@ -687,6 +831,50 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
         }
     }
 
+    private void SanitizeAudioSettings()
+    {
+        SanitizeAudioSettings(normalAudioSettings);
+        SanitizeAudioSettings(anomalyAudioSettings);
+    }
+
+    private static void SanitizeAudioSettings(SpatialAudioSettings settings)
+    {
+        if (settings == null)
+        {
+            return;
+        }
+
+        settings.volume = Mathf.Clamp01(settings.volume);
+        settings.minDistance = Mathf.Max(0f, settings.minDistance);
+        settings.maxDistance = Mathf.Max(settings.minDistance + 0.01f, settings.maxDistance);
+    }
+
+    private Vector3 GetAudioGizmoWorldPosition(AnomalyType previewType)
+    {
+        var localPosition = GetAnomalyLocalPosition(previewType);
+        var parent = transform.parent;
+        return parent != null ? parent.TransformPoint(localPosition) : localPosition;
+    }
+
+    private void DrawAudioRangeGizmo(SpatialAudioSettings settings, AnomalyType previewType, Color color)
+    {
+        if (!HasAudioSettings(settings))
+        {
+            return;
+        }
+
+        var worldPosition = GetAudioGizmoWorldPosition(previewType);
+
+        Gizmos.color = color;
+        Gizmos.DrawWireSphere(worldPosition, settings.maxDistance);
+
+        if (settings.minDistance > 0f)
+        {
+            Gizmos.color = new Color(color.r, color.g, color.b, Mathf.Clamp01(color.a * 0.55f));
+            Gizmos.DrawWireSphere(worldPosition, settings.minDistance);
+        }
+    }
+
 #if UNITY_EDITOR
     public bool SyncEditorGeneratedFieldsNow()
     {
@@ -731,6 +919,7 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
     {
         SyncEditorGeneratedFields();
         anomalyPhase = Mathf.Clamp(anomalyPhase, 1, 3);
+        SanitizeAudioSettings();
 
         if (!previewAnomalyInEditMode && !suppressEditorOriginalTransformCapture)
         {
@@ -876,18 +1065,22 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
 
     private void OnDrawGizmosSelected()
     {
-        if (assignedAnomalyType != AnomalyType.MovedObject)
+        if (assignedAnomalyType == AnomalyType.MovedObject)
         {
-            return;
+            var from = transform.position;
+            var to = transform.position + (transform.rotation * movedLocalPositionOffset);
+
+            Gizmos.color = new Color(0.1f, 0.95f, 0.15f, 0.95f);
+            Gizmos.DrawLine(from, to);
+            Gizmos.DrawWireSphere(to, 0.18f);
+            Gizmos.DrawSphere(to, 0.06f);
         }
 
-        var from = transform.position;
-        var to = transform.position + (transform.rotation * movedLocalPositionOffset);
+        var normalAudioColor = new Color(0.1f, 0.75f, 1f, 0.75f);
+        var anomalyAudioColor = new Color(1f, 0.4f, 0.15f, 0.8f);
 
-        Gizmos.color = new Color(0.1f, 0.95f, 0.15f, 0.95f);
-        Gizmos.DrawLine(from, to);
-        Gizmos.DrawWireSphere(to, 0.18f);
-        Gizmos.DrawSphere(to, 0.06f);
+        DrawAudioRangeGizmo(normalAudioSettings, AnomalyType.None, normalAudioColor);
+        DrawAudioRangeGizmo(anomalyAudioSettings, assignedAnomalyType, anomalyAudioColor);
     }
 #endif
 }

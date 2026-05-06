@@ -84,7 +84,7 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
         }
 
         WireUi();
-        NormalizeUiLayout();
+        ConfigureRuntimeListLayouts();
         EnsureJoinPasswordPanel();
         ConnectToPhoton();
         RefreshAllUi();
@@ -494,6 +494,13 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
         RefreshRoomList();
     }
 
+    private void ConfigureRuntimeListLayouts()
+    {
+        NormalizeRoomListContent();
+        ConfigureRoomPlayerListPanelLayout();
+        NormalizeRoomSlotLayout();
+    }
+
     private void RefreshRoomList()
     {
         if (roomListContent == null)
@@ -530,12 +537,6 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
             var roomName = roomInfo.Name;
             button.onClick.RemoveAllListeners();
             button.onClick.AddListener(() => SetSelectedRoom(roomName));
-
-            var image = button.GetComponent<Image>();
-            if (image != null)
-            {
-                image.color = new Color(0.83f, 0.83f, 0.83f, 1f);
-            }
 
             var outline = button.GetComponent<Outline>();
             if (outline != null)
@@ -904,16 +905,7 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
 
     private void ApplyButtonBorder(Button button, Color borderColor)
     {
-        if (button == null)
-        {
-            return;
-        }
-
-        var outline = button.GetComponent<Outline>();
-        if (outline != null)
-        {
-            outline.effectColor = borderColor;
-        }
+        // UI styling is now controlled from the scene/prefab so runtime no longer overwrites button borders.
     }
 
     private void ClearRoomUi()
@@ -1020,6 +1012,16 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
 
     private Button CreateRuntimeRoomListEntry(RoomInfo roomInfo, int index)
     {
+        if (roomListEntryButtonPrefab != null)
+        {
+            var prefabButton = Instantiate(roomListEntryButtonPrefab, roomListContent);
+            prefabButton.gameObject.name = $"Room Entry {roomInfo.Name}";
+            prefabButton.gameObject.SetActive(true);
+            prefabButton.transform.SetAsLastSibling();
+            ConfigureRoomListEntryButton(prefabButton, roomInfo, index);
+            return prefabButton;
+        }
+
         var entryObject = new GameObject($"Room Entry {roomInfo.Name}", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Outline), typeof(Button), typeof(LayoutElement));
         entryObject.transform.SetParent(roomListContent, false);
         entryObject.transform.SetAsLastSibling();
@@ -1081,7 +1083,7 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
         return button;
     }
 
-    private void ConfigureRoomListEntryButton(Button button, RoomInfo roomInfo)
+    private void ConfigureRoomListEntryButton(Button button, RoomInfo roomInfo, int index)
     {
         if (button == null)
         {
@@ -1094,8 +1096,8 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
             rectTransform.anchorMin = new Vector2(0f, 1f);
             rectTransform.anchorMax = new Vector2(1f, 1f);
             rectTransform.pivot = new Vector2(0.5f, 1f);
-            rectTransform.anchoredPosition = Vector2.zero;
-            rectTransform.sizeDelta = new Vector2(0f, 138f);
+            rectTransform.anchoredPosition = new Vector2(0f, -(RoomListPaddingTop + (index * (RoomListEntryHeight + RoomListEntrySpacing))));
+            rectTransform.sizeDelta = new Vector2(0f, RoomListEntryHeight);
             rectTransform.localScale = Vector3.one;
             rectTransform.localRotation = Quaternion.identity;
         }
@@ -1106,17 +1108,9 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
             layoutElement = button.gameObject.AddComponent<LayoutElement>();
         }
 
-        layoutElement.minHeight = 138f;
-        layoutElement.preferredHeight = 138f;
+        layoutElement.minHeight = RoomListEntryHeight;
+        layoutElement.preferredHeight = RoomListEntryHeight;
         layoutElement.flexibleHeight = -1f;
-
-        var image = button.GetComponent<Image>();
-        if (image != null)
-        {
-            image.enabled = true;
-            image.color = new Color(0.83f, 0.83f, 0.83f, 1f);
-            image.raycastTarget = true;
-        }
 
         var outline = button.GetComponent<Outline>();
         if (outline != null)
@@ -1124,7 +1118,6 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
             outline.effectColor = selectedRoom != null && selectedRoom.Name == roomInfo.Name
                 ? new Color(1f, 0.9f, 0.2f, 1f)
                 : Color.black;
-            outline.effectDistance = new Vector2(3f, -3f);
         }
 
         var text = button.GetComponentInChildren<TextMeshProUGUI>(true);
@@ -1148,12 +1141,7 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
 
         text.gameObject.SetActive(true);
         text.enabled = true;
-        text.color = Color.black;
-        text.fontSize = 24f;
-        text.alignment = TextAlignmentOptions.TopLeft;
-        text.enableWordWrapping = true;
         text.raycastTarget = false;
-        text.margin = Vector4.zero;
     }
 
     private void RepublishCurrentRoomListing()
@@ -1177,6 +1165,34 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
 
         currentRoom.SetCustomProperties(updatedProperties);
         Debug.Log($"[LobbyTestPhotonController] Republished room listing: {currentRoom.Name}");
+    }
+
+    private void ConfigureRoomPlayerListPanelLayout()
+    {
+        if (roomPanel == null)
+        {
+            return;
+        }
+
+        var playerListPanelRect = FindChildRect(roomPanel.transform, "Player List Panel");
+        SetRectTransform(playerListPanelRect, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -8f), new Vector2(760f, 500f));
+
+        if (playerListPanelRect == null)
+        {
+            return;
+        }
+
+        var listGroup = playerListPanelRect.GetComponent<VerticalLayoutGroup>();
+        if (listGroup != null)
+        {
+            listGroup.padding = new RectOffset(18, 18, 18, 18);
+            listGroup.spacing = 14f;
+            listGroup.childAlignment = TextAnchor.UpperCenter;
+            listGroup.childControlWidth = true;
+            listGroup.childControlHeight = true;
+            listGroup.childForceExpandWidth = true;
+            listGroup.childForceExpandHeight = false;
+        }
     }
 
     private void NormalizeUiLayout()
@@ -1326,52 +1342,20 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
             }
 
             var slotImage = slotRoot.GetComponent<Image>();
-            if (slotImage != null)
-            {
-                slotImage.color = new Color(0.14f, 0.14f, 0.14f, 0.96f);
-            }
 
             var labelRect = FindChildRect(slotRoot.transform, $"Player Label {i + 1}");
             SetRectTransform(labelRect, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(14f, -10f), new Vector2(136f, 24f));
-            var labelText = labelRect != null ? labelRect.GetComponent<TextMeshProUGUI>() : null;
-            if (labelText != null)
-            {
-                labelText.fontSize = 20f;
-                labelText.alignment = TextAlignmentOptions.Left;
-                labelText.color = Color.white;
-                labelText.text = "Player Name :";
-            }
 
             if (playerNameInputs[i] != null)
             {
                 var inputRect = playerNameInputs[i].GetComponent<RectTransform>();
                 SetRectTransform(inputRect, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(156f, -10f), new Vector2(520f, 42f));
-                NormalizeInputVisual(playerNameInputs[i], 22f);
-
-                var playerNameImage = playerNameInputs[i].GetComponent<Image>();
-                if (playerNameImage != null)
-                {
-                    playerNameImage.color = new Color(0.20f, 0.20f, 0.20f, 1f);
-                }
-
-                if (playerNameInputs[i].textComponent != null)
-                {
-                    playerNameInputs[i].textComponent.color = Color.white;
-                }
-
-                if (playerNameInputs[i].placeholder is TextMeshProUGUI playerPlaceholder)
-                {
-                    playerPlaceholder.color = new Color(1f, 1f, 1f, 0.45f);
-                }
             }
 
             if (i < playerRoleTexts.Length && playerRoleTexts[i] != null)
             {
                 var roleRect = playerRoleTexts[i].GetComponent<RectTransform>();
                 SetRectTransform(roleRect, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(14f, 12f), new Vector2(260f, 26f));
-                playerRoleTexts[i].fontSize = 20f;
-                playerRoleTexts[i].alignment = TextAlignmentOptions.Left;
-                playerRoleTexts[i].color = Color.white;
             }
         }
     }

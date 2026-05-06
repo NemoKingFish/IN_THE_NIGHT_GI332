@@ -13,6 +13,8 @@ public class ChecklistItemUI : MonoBehaviour
     private ChecklistUI ownerUI;
     private int itemIndex;
     private bool suppressCallback;
+    private bool visualsCached;
+    private Color defaultOutlineColor = Color.black;
 
     public void Setup(ChecklistUI ui, int index, string label)
     {
@@ -23,6 +25,7 @@ public class ChecklistItemUI : MonoBehaviour
         if (labelText != null)
         {
             labelText.text = FormatLabel(label);
+            EnsureReadableLabelPresentation();
         }
 
         if (toggle != null)
@@ -128,6 +131,8 @@ public class ChecklistItemUI : MonoBehaviour
             labelText = GetComponentInChildren<TextMeshProUGUI>(true);
         }
 
+        CacheDefaultVisuals();
+
         var layoutElement = GetComponent<LayoutElement>();
         if (layoutElement != null)
         {
@@ -154,7 +159,7 @@ public class ChecklistItemUI : MonoBehaviour
         {
             labelText.raycastTarget = false;
             labelText.enableWordWrapping = true;
-            labelText.fontSize = 34f;
+            labelText.enabled = true;
             labelText.alignment = TextAlignmentOptions.Center;
 
             if (labelText.transform is RectTransform labelRectTransform)
@@ -197,10 +202,43 @@ public class ChecklistItemUI : MonoBehaviour
         button.transition = Selectable.Transition.None;
         button.targetGraphic = backgroundImage;
 
-        backgroundImage.color = new Color(0.76f, 0.76f, 0.76f, 0.96f);
-
         selectionOutline.effectDistance = new Vector2(3f, -3f);
         selectionOutline.useGraphicAlpha = false;
+    }
+
+    private void CacheDefaultVisuals()
+    {
+        if (visualsCached)
+        {
+            return;
+        }
+
+        if (selectionOutline != null)
+        {
+            defaultOutlineColor = selectionOutline.effectColor;
+        }
+
+        visualsCached = true;
+    }
+
+    private void EnsureReadableLabelPresentation()
+    {
+        if (labelText == null)
+        {
+            return;
+        }
+
+        if (labelText.color.a <= 0f || IsNearlyWhite(labelText.color))
+        {
+            labelText.color = new Color(0.12f, 0.12f, 0.12f, 1f);
+        }
+
+        labelText.alignment = TextAlignmentOptions.Center;
+    }
+
+    private static bool IsNearlyWhite(Color color)
+    {
+        return color.r >= 0.9f && color.g >= 0.9f && color.b >= 0.9f;
     }
 
     private void HideLegacyToggleVisuals()
@@ -230,24 +268,11 @@ public class ChecklistItemUI : MonoBehaviour
 
     private void RefreshVisualState(bool isSelected)
     {
-        if (backgroundImage != null)
-        {
-            backgroundImage.color = isSelected
-                ? new Color(0.78f, 0.90f, 0.78f, 0.98f)
-                : new Color(0.76f, 0.76f, 0.76f, 0.96f);
-        }
-
         if (selectionOutline != null)
         {
             selectionOutline.effectColor = isSelected
                 ? new Color(0.08f, 0.92f, 0.18f, 1f)
-                : Color.black;
-        }
-
-        if (labelText != null)
-        {
-            labelText.color = Color.black;
-            labelText.alignment = TextAlignmentOptions.Center;
+                : defaultOutlineColor;
         }
     }
 

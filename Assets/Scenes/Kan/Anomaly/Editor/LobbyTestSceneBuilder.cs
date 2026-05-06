@@ -415,7 +415,7 @@ public static class LobbyTestSceneBuilder
             var playerListPanel = CreatePanel(
                 roomPanel.transform,
                 "Player List Panel",
-                new Color(0.24f, 0.22f, 0.22f, 0.92f),
+                new Color(0.24f, 0.22f, 0.22f, 0f),
                 new Vector2(0f, 0f),
                 new Vector2(1f, 1f),
                 new Vector2(0.5f, 0.5f),

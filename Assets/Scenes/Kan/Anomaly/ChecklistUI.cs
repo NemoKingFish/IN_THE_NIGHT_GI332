@@ -67,7 +67,7 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
 
         ResolveOptionalReferences();
         EnsureEventSystemExists();
-        ConfigureWindowLayout();
+        ConfigureChecklistListLayout();
         BuildUI();
 
         if (submitButton != null)
@@ -96,6 +96,7 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
         RefreshSubmitPresentation();
         RefreshSelectionPresentation();
         RefreshCursorState();
+        HideCenterStatusText();
 
         initialized = true;
     }
@@ -290,49 +291,8 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
         }
     }
 
-    private void ConfigureWindowLayout()
+    private void ConfigureChecklistListLayout()
     {
-        if (checklistWindow != null && checklistWindow.transform is RectTransform windowRect)
-        {
-            windowRect.anchorMin = Vector2.zero;
-            windowRect.anchorMax = Vector2.one;
-            windowRect.pivot = new Vector2(0.5f, 0.5f);
-            windowRect.anchoredPosition = Vector2.zero;
-            windowRect.offsetMin = Vector2.zero;
-            windowRect.offsetMax = Vector2.zero;
-        }
-
-        if (titleText != null)
-        {
-            titleText.text = "Check List";
-            titleText.fontSize = 58f;
-            titleText.alignment = TextAlignmentOptions.Center;
-            titleText.color = Color.black;
-            titleText.raycastTarget = false;
-
-            if (titleText.rectTransform != null)
-            {
-                titleText.rectTransform.anchorMin = new Vector2(0.18f, 1f);
-                titleText.rectTransform.anchorMax = new Vector2(0.82f, 1f);
-                titleText.rectTransform.pivot = new Vector2(0.5f, 1f);
-                titleText.rectTransform.offsetMin = new Vector2(0f, -106f);
-                titleText.rectTransform.offsetMax = new Vector2(0f, -18f);
-            }
-        }
-
-        if (resultText != null)
-        {
-            resultText.fontSize = 34f;
-            resultText.alignment = TextAlignmentOptions.Center;
-
-            if (resultText.rectTransform != null)
-            {
-                resultText.rectTransform.anchorMin = new Vector2(0.5f, 0f);
-                resultText.rectTransform.anchorMax = new Vector2(0.5f, 0f);
-                resultText.rectTransform.pivot = new Vector2(0.5f, 0f);
-            }
-        }
-
         if (checklistScrollRect != null)
         {
             checklistScrollRect.horizontal = false;
@@ -383,30 +343,6 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
             layoutGroup.childForceExpandHeight = false;
         }
 
-        ConfigureActionButton(submitButton, 74f);
-        ConfigureActionButton(cancelSubmitButton, 18f);
-
-        if (submitButtonText != null)
-        {
-            submitButtonText.fontSize = 24f;
-            submitButtonText.alignment = TextAlignmentOptions.Center;
-            submitButtonText.text = "submit";
-        }
-
-        if (cancelSubmitButtonText != null)
-        {
-            cancelSubmitButtonText.fontSize = 24f;
-            cancelSubmitButtonText.alignment = TextAlignmentOptions.Center;
-            cancelSubmitButtonText.text = "cancel";
-        }
-
-        if (resultText != null)
-        {
-            resultText.fontSize = 34f;
-            resultText.alignment = TextAlignmentOptions.Center;
-        }
-
-        EnforceVerticalOnlyScroll();
     }
 
     private void BuildUI()
@@ -551,25 +487,6 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
             }
 
             DisableEmbeddedScrollbarVisuals();
-            ConfigureScrollViewBounds();
-        }
-
-        if (contentParent is RectTransform contentRect)
-        {
-            var anchoredPosition = contentRect.anchoredPosition;
-            if (Mathf.Abs(anchoredPosition.x) > 0.01f)
-            {
-                anchoredPosition.x = 0f;
-                contentRect.anchoredPosition = anchoredPosition;
-            }
-
-            var offsetMin = contentRect.offsetMin;
-            var offsetMax = contentRect.offsetMax;
-            if (Mathf.Abs(offsetMin.x) > 0.01f || Mathf.Abs(offsetMax.x) > 0.01f)
-            {
-                contentRect.offsetMin = new Vector2(0f, offsetMin.y);
-                contentRect.offsetMax = new Vector2(0f, offsetMax.y);
-            }
         }
     }
 
@@ -651,6 +568,14 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
             case GameRoundManager.GamePhase.Victory:
                 resultText.text = "You Win";
                 break;
+        }
+    }
+
+    private void HideCenterStatusText()
+    {
+        if (resultText != null)
+        {
+            resultText.gameObject.SetActive(false);
         }
     }
 

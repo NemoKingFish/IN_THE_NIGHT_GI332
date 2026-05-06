@@ -19,6 +19,8 @@ public class AnomalySpawnPointEditor : Editor
     private SerializedProperty changedObjectScaleMultiplierProperty;
     private SerializedProperty overrideChangedObjectColorProperty;
     private SerializedProperty changedObjectColorProperty;
+    private SerializedProperty normalAudioSettingsProperty;
+    private SerializedProperty anomalyAudioSettingsProperty;
 
     private void OnEnable()
     {
@@ -36,6 +38,8 @@ public class AnomalySpawnPointEditor : Editor
         changedObjectScaleMultiplierProperty = serializedObject.FindProperty("changedObjectScaleMultiplier");
         overrideChangedObjectColorProperty = serializedObject.FindProperty("overrideChangedObjectColor");
         changedObjectColorProperty = serializedObject.FindProperty("changedObjectColor");
+        normalAudioSettingsProperty = serializedObject.FindProperty("normalAudioSettings");
+        anomalyAudioSettingsProperty = serializedObject.FindProperty("anomalyAudioSettings");
     }
 
     public override void OnInspectorGUI()
@@ -136,6 +140,19 @@ public class AnomalySpawnPointEditor : Editor
         else
         {
             EditorGUILayout.HelpBox("Changed Object overrides are active only when Assigned Anomaly Type is set to ChangedObject.", MessageType.None);
+        }
+
+        EditorGUILayout.Space(4f);
+        EditorGUILayout.PropertyField(normalAudioSettingsProperty, new GUIContent("Normal Audio"), true);
+        EditorGUILayout.PropertyField(anomalyAudioSettingsProperty, new GUIContent("Anomaly Audio"), true);
+
+        if (anomalyType == AnomalyType.StrangeSound)
+        {
+            EditorGUILayout.HelpBox("StrangeSound can keep the same object visible and swap from the normal clip to the anomaly clip. If Anomaly Prefab is empty, the normal visual object stays in place and only the sound changes.", MessageType.None);
+        }
+        else
+        {
+            EditorGUILayout.HelpBox("Audio settings can be used to give the normal state and anomaly state different 3D sounds. Gizmos will show both sound ranges when this object is selected.", MessageType.None);
         }
 
         EditorGUILayout.Space(6f);
