@@ -75,6 +75,9 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
 
     private void Start()
     {
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
         PhotonNetwork.AutomaticallySyncScene = true;
         PhotonNetwork.GameVersion = gameVersion;
 

@@ -458,6 +458,11 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
         }
 
         ConfigureAudioSource(audioSource, settings);
+        var soundEmitter = SoundCategoryEmitter.Ensure(audioSource, SoundCategory.Sfx);
+        if (soundEmitter != null)
+        {
+            soundEmitter.CaptureCurrentVolumeAsBase();
+        }
 
         if (audioSource.clip != settings.clip)
         {

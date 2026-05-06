@@ -12,6 +12,9 @@ public class MenuSceneController : MonoBehaviour
 
     private void Awake()
     {
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
         if (playButton != null)
         {
             playButton.onClick.RemoveListener(OnPlayButtonPressed);

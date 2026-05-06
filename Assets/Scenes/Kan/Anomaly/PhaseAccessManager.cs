@@ -67,6 +67,11 @@ public class PhaseAccessManager : MonoBehaviour
         phaseChangeAudioSource.playOnAwake = false;
         phaseChangeAudioSource.loop = false;
         phaseChangeAudioSource.spatialBlend = 0f;
+        var soundEmitter = SoundCategoryEmitter.Ensure(phaseChangeAudioSource, SoundCategory.Sfx);
+        if (soundEmitter != null)
+        {
+            soundEmitter.CaptureCurrentVolumeAsBase();
+        }
     }
 
     private void TrySubscribe()

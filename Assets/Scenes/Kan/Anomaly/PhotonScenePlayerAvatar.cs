@@ -169,6 +169,11 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
 
     private void UpdateLocalMovement()
     {
+        if (GameplayPauseMenu.IsLocalPauseMenuOpen)
+        {
+            return;
+        }
+
         var inputX = Input.GetAxisRaw("Horizontal");
         var inputZ = Input.GetAxisRaw("Vertical");
         var input = new Vector3(inputX, 0f, inputZ);

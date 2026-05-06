@@ -115,6 +115,11 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
 
         if (Input.GetKeyDown(toggleKey))
         {
+            if (GameplayPauseMenu.IsLocalPauseMenuOpen)
+            {
+                return;
+            }
+
             ToggleWindow();
         }
 
