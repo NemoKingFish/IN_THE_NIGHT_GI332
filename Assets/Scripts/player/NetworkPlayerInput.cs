@@ -4,7 +4,6 @@ using UnityEngine;
 public class NetworkPlayerInput : NetworkBehaviour
 {
     public Vector2 MoveInput { get; private set; }
-    public bool JumpPressed { get; private set; }
     public bool SprintHeld { get; private set; }
     public float LookYaw { get; private set; }
 
@@ -52,17 +51,16 @@ public class NetworkPlayerInput : NetworkBehaviour
         if (Cursor.lockState != CursorLockMode.Locked)
         {
             MoveInput = Vector2.zero;
-            JumpPressed = false;
             SprintHeld = false;
 
-            SubmitInputServerRpc(MoveInput, JumpPressed, SprintHeld, LookYaw);
+            SubmitInputServerRpc(MoveInput, SprintHeld, LookYaw);
             return;
         }
 
         ReadLook();
         ReadMove();
 
-        SubmitInputServerRpc(MoveInput, JumpPressed, SprintHeld, LookYaw);
+        SubmitInputServerRpc(MoveInput, SprintHeld, LookYaw);
     }
 
     private void ReadLook()
@@ -85,22 +83,15 @@ public class NetworkPlayerInput : NetworkBehaviour
             Input.GetAxisRaw("Vertical")
         );
 
-        JumpPressed = Input.GetButtonDown("Jump");
         SprintHeld = Input.GetKey(KeyCode.LeftShift);
     }
 
     [ServerRpc]
-    private void SubmitInputServerRpc(Vector2 move, bool jump, bool sprint, float yaw)
+    private void SubmitInputServerRpc(Vector2 move, bool sprint, float yaw)
     {
         MoveInput = move;
-        JumpPressed = jump;
         SprintHeld = sprint;
         LookYaw = yaw;
-    }
-
-    public void ConsumeJump()
-    {
-        JumpPressed = false;
     }
 
     private float NormalizeAngle(float angle)

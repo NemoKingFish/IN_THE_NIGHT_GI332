@@ -55,23 +55,7 @@ public class NetworkPlayerAnimation : NetworkBehaviour
         animator.SetFloat(motionSpeedHash, speed > 0.1f ? 1f : 0f);
 
         // ===== JUMP / FALL =====
-        if (!grounded)
-        {
-            if (motor.VerticalVelocity > 0.1f)
-            {
-                animator.SetBool(jumpHash, true);
-                animator.SetBool(freeFallHash, false);
-            }
-            else
-            {
-                animator.SetBool(jumpHash, false);
-                animator.SetBool(freeFallHash, true);
-            }
-        }
-        else
-        {
-            animator.SetBool(jumpHash, false);
-            animator.SetBool(freeFallHash, false);
-        }
+        animator.SetBool(jumpHash, false);
+        animator.SetBool(freeFallHash, !grounded && motor.VerticalVelocity < -0.1f);
     }
 }

@@ -6,7 +6,6 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
 {
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 4.5f;
-    [SerializeField] private float jumpForce = 6f;
     [SerializeField] private float gravity = -18f;
     [SerializeField] private float remoteSmoothing = 12f;
 
@@ -20,10 +19,12 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
     [Header("Presentation")]
     [SerializeField] private Animator animator;
     [SerializeField] private TextMeshPro nameLabel;
+    [SerializeField] private bool hideLocalBody = false;
 
     private CharacterController characterController;
     private Camera playerCamera;
     private Renderer[] renderers;
+    private Animator[] childAnimators;
     private int ownerActorNumber;
     private bool isLocalPlayer;
     private float verticalVelocity;
@@ -42,6 +43,7 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
     {
         characterController = GetComponent<CharacterController>();
         renderers = GetComponentsInChildren<Renderer>(true);
+        childAnimators = GetComponentsInChildren<Animator>(true);
         if (animator == null)
         {
             animator = GetComponentInChildren<Animator>(true);
@@ -50,7 +52,10 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
         if (animator != null)
         {
             animator.applyRootMotion = false;
+            animator.enabled = true;
         }
+
+        DisableExtraAnimators();
 
         if (cameraTarget == null)
         {
@@ -100,6 +105,7 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
         ownerActorNumber = actorNumber;
         isLocalPlayer = isLocal;
         gameObject.name = displayName;
+        DisableExtraAnimators();
         SnapToGround();
         lastAnimationSamplePosition = transform.position;
         sampledHorizontalSpeed = 0f;
@@ -114,7 +120,7 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
         {
             EnsureCamera();
             DisableNonPlayerCameras();
-            SetLocalRenderersVisible(false);
+            SetLocalRenderersVisible(!hideLocalBody);
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
@@ -186,11 +192,6 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
         if (grounded && verticalVelocity < 0f)
         {
             verticalVelocity = -2f;
-        }
-
-        if (grounded && Input.GetKeyDown(KeyCode.Space))
-        {
-            verticalVelocity = jumpForce;
         }
 
         verticalVelocity += gravity * Time.deltaTime;
@@ -268,7 +269,7 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
         SetAnimatorFloatIfPresent("VerticalVelocity", verticalVelocity);
         SetAnimatorBoolIfPresent("Grounded", grounded);
         SetAnimatorBoolIfPresent("FreeFall", !grounded && verticalVelocity < -0.1f);
-        SetAnimatorBoolIfPresent("Jump", !grounded && verticalVelocity > 0.1f);
+        SetAnimatorBoolIfPresent("Jump", false);
     }
 
     private bool IsGrounded()
@@ -473,6 +474,32 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
         }
 
         return false;
+    }
+
+    private void DisableExtraAnimators()
+    {
+        if (childAnimators == null || childAnimators.Length == 0)
+        {
+            return;
+        }
+
+        for (var i = 0; i < childAnimators.Length; i++)
+        {
+            var candidate = childAnimators[i];
+            if (candidate == null)
+            {
+                continue;
+            }
+
+            if (candidate == animator)
+            {
+                candidate.enabled = true;
+                candidate.applyRootMotion = false;
+                continue;
+            }
+
+            candidate.enabled = false;
+        }
     }
 
     private static Transform FindChildRecursive(Transform parent, string targetName)

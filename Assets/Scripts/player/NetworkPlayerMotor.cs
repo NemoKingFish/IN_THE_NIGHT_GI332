@@ -14,9 +14,8 @@ public class NetworkPlayerMotor : NetworkBehaviour
     [SerializeField] private float acceleration = 12f;
     [SerializeField] private float airControl = 0.4f;
 
-    [Header("Jump / Gravity")]
+    [Header("Gravity")]
     [SerializeField] private float gravity = -25f;
-    [SerializeField] private float jumpHeight = 1.2f;
 
     private CharacterController controller;
     private NetworkPlayerInput netInput;
@@ -51,7 +50,6 @@ public class NetworkPlayerMotor : NetworkBehaviour
 
         Vector2 input = netInput.MoveInput;
         bool sprint = netInput.SprintHeld;
-        bool jump = netInput.JumpPressed;
 
         Vector3 moveDir = playerYawRoot.right * input.x + playerYawRoot.forward * input.y;
         moveDir.y = 0f;
@@ -73,12 +71,6 @@ public class NetworkPlayerMotor : NetworkBehaviour
         {
             if (verticalVelocity < 0f)
                 verticalVelocity = -2f;
-
-            if (jump)
-            {
-                verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
-                netInput.ConsumeJump();
-            }
         }
 
         verticalVelocity += gravity * dt;

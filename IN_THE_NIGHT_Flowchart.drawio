@@ -1,130 +1,127 @@
-<mxfile host="app.diagrams.net" modified="2026-05-03T12:30:00.000Z" agent="Codex" version="24.7.17" type="device">
-  <diagram id="in-the-night-flow-v3" name="Game Flow">
-    <mxGraphModel dx="1920" dy="1080" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2000" pageHeight="2600" math="0" shadow="0">
+<mxfile host="app.diagrams.net" modified="2026-05-04T18:30:00.000Z" agent="Codex" version="24.7.17" type="device">
+  <diagram id="in-the-night-flow-v4" name="Game Flow">
+    <mxGraphModel dx="1920" dy="1080" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="2800" math="0" shadow="0">
       <root>
         <mxCell id="0"/>
         <mxCell id="1" parent="0"/>
-        <mxCell id="title" value="IN THE NIGHT - Latest Core Game Flow" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=22;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="690" y="20" width="500" height="30" as="geometry"/>
+
+        <mxCell id="title" value="IN THE NIGHT - Current Core Game Flow" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=22;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="760" y="20" width="620" height="30" as="geometry"/>
         </mxCell>
 
-        <mxCell id="load" value="โหลดฉากเกม" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=16;" vertex="1" parent="1">
-          <mxGeometry x="830" y="80" width="220" height="60" as="geometry"/>
+        <mxCell id="load" value="Load Gameplay Scene" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="930" y="80" width="260" height="60" as="geometry"/>
         </mxCell>
-        <mxCell id="spawn" value="เกิดในห้อง Spawn" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=16;" vertex="1" parent="1">
-          <mxGeometry x="830" y="180" width="220" height="60" as="geometry"/>
+        <mxCell id="spawn" value="Players Spawn in Spawn Room" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="930" y="180" width="260" height="60" as="geometry"/>
         </mxCell>
-        <mxCell id="phasecheck" value="เริ่มต้นที่ Phase ปัจจุบัน" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=16;" vertex="1" parent="1">
-          <mxGeometry x="830" y="280" width="220" height="60" as="geometry"/>
+        <mxCell id="phaseStart" value="Determine Current Round and Phase&#xa;Rounds 1-3 = Phase 1&#xa;Rounds 4-5 = Phase 2&#xa;Rounds 6-7 = Phase 3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="905" y="280" width="310" height="100" as="geometry"/>
         </mxCell>
-        <mxCell id="roundphase" value="กำหนดรอบ / Phase&#xa;รอบ 1-3 = Phase 1&#xa;รอบ 4-5 = Phase 2&#xa;รอบ 6-7 = Phase 3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=15;" vertex="1" parent="1">
-          <mxGeometry x="805" y="380" width="270" height="100" as="geometry"/>
+        <mxCell id="unlockDoors" value="Open Area Doors for Current Phase&#xa;Phase 1 = Center&#xa;Phase 2 = Center + Left&#xa;Phase 3 = Center + Left + Right" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="895" y="420" width="330" height="100" as="geometry"/>
         </mxCell>
-        <mxCell id="unlock" value="เปิดประตูร้านตาม Phase&#xa;Phase 1 = กลาง&#xa;Phase 2 = กลาง + ซ้าย&#xa;Phase 3 = กลาง + ซ้าย + ขวา" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=15;" vertex="1" parent="1">
-          <mxGeometry x="805" y="520" width="270" height="100" as="geometry"/>
+        <mxCell id="spawnDoorOpen" value="Open Spawn Room Door" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="930" y="560" width="260" height="60" as="geometry"/>
         </mxCell>
-        <mxCell id="memopen" value="เปิดประตูห้อง Spawn&#xa;เริ่มช่วงจำแมพปกติ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=16;" vertex="1" parent="1">
-          <mxGeometry x="830" y="660" width="220" height="70" as="geometry"/>
+        <mxCell id="memorize" value="Memorize Normal Map State&#xa;(No required timer)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="930" y="660" width="260" height="70" as="geometry"/>
         </mxCell>
-        <mxCell id="memorize" value="ผู้เล่นจำแมพปกติ&#xa;(ไม่จำกัดเวลา)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=16;" vertex="1" parent="1">
-          <mxGeometry x="830" y="770" width="220" height="70" as="geometry"/>
+        <mxCell id="manualAdvance" value="Advance Memorize Phase&#xa;(button / trigger)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="930" y="770" width="260" height="70" as="geometry"/>
         </mxCell>
-        <mxCell id="returnspawn" value="ผู้เล่นกลับห้อง Spawn" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=16;" vertex="1" parent="1">
-          <mxGeometry x="830" y="880" width="220" height="60" as="geometry"/>
+        <mxCell id="returnSpawn" value="Return Players to Spawn Room" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="930" y="880" width="260" height="60" as="geometry"/>
         </mxCell>
-        <mxCell id="spawndoorclose" value="ปิด / ล็อกประตูห้อง Spawn" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=16;" vertex="1" parent="1">
-          <mxGeometry x="830" y="980" width="220" height="60" as="geometry"/>
+        <mxCell id="lockdown" value="SpawnLockdown&#xa;Close / Lock Spawn Room Door" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="930" y="980" width="260" height="70" as="geometry"/>
         </mxCell>
-        <mxCell id="roll" value="สุ่ม event anomaly&#xa;ว่ามีหรือไม่มี" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=16;" vertex="1" parent="1">
-          <mxGeometry x="830" y="1080" width="220" height="70" as="geometry"/>
+        <mxCell id="rollAnomaly" value="Roll Anomalies&#xa;(may be none)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="930" y="1090" width="260" height="70" as="geometry"/>
         </mxCell>
-        <mxCell id="phasefilter" value="กรอง anomaly ตาม phase&#xa;ใช้ anomaly id + anomaly phase" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=16;" vertex="1" parent="1">
-          <mxGeometry x="830" y="1190" width="220" height="70" as="geometry"/>
+        <mxCell id="filterPhase" value="Filter by Anomaly Phase&#xa;Only use anomalies available in the current phase" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="930" y="1200" width="260" height="80" as="geometry"/>
         </mxCell>
-        <mxCell id="spawndooropen" value="เปิดประตูห้อง Spawn&#xa;เริ่มช่วงสำรวจ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=16;" vertex="1" parent="1">
-          <mxGeometry x="830" y="1300" width="220" height="70" as="geometry"/>
+        <mxCell id="reopenSpawn" value="Re-open Spawn Room Door" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="930" y="1320" width="260" height="60" as="geometry"/>
         </mxCell>
-        <mxCell id="explore" value="ผู้เล่นเดินสำรวจพื้นที่ที่เปิดอยู่&#xa;(เวลาแยกตาม phase)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=16;" vertex="1" parent="1">
-          <mxGeometry x="830" y="1410" width="220" height="80" as="geometry"/>
+        <mxCell id="explore" value="Investigation Phase&#xa;Players Explore Open Areas&#xa;Phase 1 = 120s&#xa;Phase 2 = 180s&#xa;Phase 3 = 240s" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="915" y="1420" width="290" height="110" as="geometry"/>
         </mxCell>
-        <mxCell id="checklist" value="เปิด Checklist" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=16;" vertex="1" parent="1">
-          <mxGeometry x="830" y="1530" width="220" height="60" as="geometry"/>
+        <mxCell id="openChecklist" value="Open Checklist" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="930" y="1570" width="260" height="60" as="geometry"/>
         </mxCell>
-        <mxCell id="choose" value="เลือกประเภท Anomaly&#xa;(หรือปล่อยว่างถ้าไม่มี anomaly)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=16;" vertex="1" parent="1">
-          <mxGeometry x="830" y="1630" width="220" height="80" as="geometry"/>
+        <mxCell id="chooseChecklist" value="Choose Anomaly Categories&#xa;Checklist may be left empty if no anomaly is found" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="930" y="1670" width="260" height="90" as="geometry"/>
         </mxCell>
-        <mxCell id="submit" value="ผู้เล่นทุกคน Submit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=16;" vertex="1" parent="1">
-          <mxGeometry x="830" y="1750" width="220" height="60" as="geometry"/>
+        <mxCell id="submit" value="All Players Submit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="930" y="1800" width="260" height="60" as="geometry"/>
         </mxCell>
-        <mxCell id="sharedcheck" value="ใช้ checklist กลางชุดเดียว" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=16;" vertex="1" parent="1">
-          <mxGeometry x="830" y="1850" width="220" height="60" as="geometry"/>
+        <mxCell id="shared" value="Resolve One Shared Checklist Result" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="930" y="1900" width="260" height="60" as="geometry"/>
         </mxCell>
-        <mxCell id="answer" value="คำตอบถูกหรือไม่?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=16;" vertex="1" parent="1">
-          <mxGeometry x="845" y="1950" width="190" height="100" as="geometry"/>
+        <mxCell id="decision" value="Correct?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="960" y="2010" width="200" height="100" as="geometry"/>
         </mxCell>
 
-        <mxCell id="wrong" value="ถ้าผิด&#xa;ย้อนกลับไปต้น Phase ปัจจุบัน&#xa;ที่ห้อง Spawn" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=16;" vertex="1" parent="1">
-          <mxGeometry x="470" y="2100" width="250" height="90" as="geometry"/>
+        <mxCell id="wrong" value="Wrong Answer&#xa;Return to Start of Current Phase&#xa;Use Spawn Room Checkpoint" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="530" y="2160" width="300" height="90" as="geometry"/>
         </mxCell>
-        <mxCell id="correct" value="ถ้าถูก&#xa;ไปยังรอบถัดไป" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=16;" vertex="1" parent="1">
-          <mxGeometry x="1170" y="2110" width="220" height="70" as="geometry"/>
+        <mxCell id="correct" value="Correct Answer&#xa;Advance to Next Round" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="1290" y="2160" width="260" height="80" as="geometry"/>
         </mxCell>
-        <mxCell id="round7" value="ครบ 7 รอบหรือยัง?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=16;" vertex="1" parent="1">
-          <mxGeometry x="1185" y="2230" width="190" height="100" as="geometry"/>
+        <mxCell id="roundCheck" value="Round 7 Cleared?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="1320" y="2290" width="200" height="100" as="geometry"/>
         </mxCell>
-        <mxCell id="loopnext" value="เริ่มรอบใหม่&#xa;และเปิด phase เพิ่มถ้าถึงเงื่อนไข" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=16;" vertex="1" parent="1">
-          <mxGeometry x="1470" y="2245" width="250" height="70" as="geometry"/>
+        <mxCell id="nextRound" value="Start Next Round&#xa;Open New Phase Doors if threshold is reached" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="1640" y="2305" width="300" height="70" as="geometry"/>
         </mxCell>
-        <mxCell id="ending" value="Ending / Win Game" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=16;" vertex="1" parent="1">
-          <mxGeometry x="1210" y="2380" width="140" height="70" as="geometry"/>
+        <mxCell id="victory" value="Victory Phase" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="1350" y="2440" width="140" height="70" as="geometry"/>
         </mxCell>
-        <mxCell id="endingbuttons" value="UI ปุ่ม&#xa;Back to Menu&#xa;Back to Lobby" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=16;" vertex="1" parent="1">
-          <mxGeometry x="1170" y="2490" width="220" height="90" as="geometry"/>
-        </mxCell>
-        <mxCell id="lobbyscene" value="Back to Lobby = กลับ Lobby Scene" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=16;" vertex="1" parent="1">
-          <mxGeometry x="1170" y="2620" width="220" height="60" as="geometry"/>
+        <mxCell id="endPanel" value="Show GameEndPanel in Canvas&#xa;Editable UI prefab&#xa;Back To Menu&#xa;Back To Lobby" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="1295" y="2550" width="250" height="110" as="geometry"/>
         </mxCell>
 
         <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="load" target="spawn"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="spawn" target="phasecheck"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="phasecheck" target="roundphase"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="roundphase" target="unlock"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="unlock" target="memopen"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="memopen" target="memorize"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="memorize" target="returnspawn"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="returnspawn" target="spawndoorclose"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="spawndoorclose" target="roll"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="roll" target="phasefilter"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="e11" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="phasefilter" target="spawndooropen"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="e12" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="spawndooropen" target="explore"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="e13" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="explore" target="checklist"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="e14" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="checklist" target="choose"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="e15" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="choose" target="submit"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="e16" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="submit" target="sharedcheck"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="e17" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="sharedcheck" target="answer"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="e18" value="ผิด" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="answer" target="wrong"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="e19" value="ถูก" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="answer" target="correct"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="e20" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="correct" target="round7"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="e21" value="ยังไม่ครบ" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="round7" target="loopnext"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="e22" value="ครบ" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="round7" target="ending"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="e23" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="loopnext" target="phasecheck">
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="spawn" target="phaseStart"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="phaseStart" target="unlockDoors"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="unlockDoors" target="spawnDoorOpen"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="spawnDoorOpen" target="memorize"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="memorize" target="manualAdvance"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="manualAdvance" target="returnSpawn"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="returnSpawn" target="lockdown"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="lockdown" target="rollAnomaly"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="rollAnomaly" target="filterPhase"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e11" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="filterPhase" target="reopenSpawn"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e12" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="reopenSpawn" target="explore"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e13" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="explore" target="openChecklist"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e14" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="openChecklist" target="chooseChecklist"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e15" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="chooseChecklist" target="submit"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e16" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="submit" target="shared"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e17" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="shared" target="decision"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e18" value="No" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="decision" target="wrong"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e19" value="Yes" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="decision" target="correct"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e20" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="correct" target="roundCheck"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e21" value="No" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="roundCheck" target="nextRound"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e22" value="Yes" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="roundCheck" target="victory"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e23" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="nextRound" target="phaseStart">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="1840" y="2280"/>
-              <mxPoint x="1840" y="310"/>
+              <mxPoint x="2060" y="2340"/>
+              <mxPoint x="2060" y="330"/>
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e24" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="wrong" target="phasecheck">
+        <mxCell id="e24" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="wrong" target="phaseStart">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="350" y="2145"/>
-              <mxPoint x="350" y="310"/>
+              <mxPoint x="390" y="2205"/>
+              <mxPoint x="390" y="330"/>
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e25" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="ending" target="endingbuttons"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="e26" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="endingbuttons" target="lobbyscene"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e25" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=block;endFill=1;" edge="1" parent="1" source="victory" target="endPanel"><mxGeometry relative="1" as="geometry"/></mxCell>
       </root>
     </mxGraphModel>
   </diagram>

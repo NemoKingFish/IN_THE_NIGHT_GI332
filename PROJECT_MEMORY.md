@@ -2,6 +2,19 @@
 
 ## Purpose
 
+### Implementation Update 2026-05-07
+
+- Removed jump from player control in both movement paths:
+  - `Assets/Scripts/player/NetworkPlayerInput.cs`
+  - `Assets/Scripts/player/NetworkPlayerMotor.cs`
+  - `Assets/Scripts/player/NetworkPlayerAnimation.cs`
+  - `Assets/Scenes/Kan/Anomaly/PhotonScenePlayerAvatar.cs`
+- Player movement should now be treated as ground-based only:
+  - walk
+  - sprint
+  - gravity / fall
+- Animation should no longer enter `Jump` state from player input
+
 ### Implementation Update 2026-05-04
 
 - Implemented a new round-flow in code around `GameRoundManager`:
@@ -401,6 +414,16 @@ capture ที่ตรวจเป็นลักษณะ `Editor / Deep Profi
 - `IN_THE_NIGHT_Flowchart.drawio`
 - `PROJECT_MEMORY.md`
 
+### Documentation Sync Status
+
+- `GDD_IN_THE_NIGHT.md` was updated to match the current 7-round / 3-phase gameplay rules
+- `IN_THE_NIGHT_Flowchart.drawio` was updated to match:
+  - `SpawnLockdown`
+  - phase-based door unlocking
+  - empty-checklist submission
+  - wrong-answer return to current phase start
+  - in-canvas `GameEndPanel` flow
+
 ### Intended Role Of Each File
 
 - `GDD_IN_THE_NIGHT.md`
@@ -640,3 +663,74 @@ Current code-side status:
 - core loop
 - กติกาแพ้/ชนะ
 - checkpoint logic
+ 
+---
+
+## Audio Direction
+
+Audio should now support emotion and readability for the finished core loop, not just ambience.
+
+### Existing Audio In Project
+
+- `Assets/Scenes/Phukao/Audio/loop_fixed.wav`
+- `Assets/StarterAssets/ThirdPersonController/Character/Sfx/Player_Footstep_01.wav` to `Player_Footstep_10.wav`
+- `Assets/StarterAssets/ThirdPersonController/Character/Sfx/Player_Land.wav`
+
+### Existing Audio Playback Hooks
+
+- `LoopSFX`
+- `FootstepReceiver`
+- `StarterAssets.ThirdPersonController`
+
+### Recommended Audio Categories
+
+1. Base ambience loop for the whole map
+- quiet night / empty market / uneasy room tone
+
+2. Phase ambience layers
+- Phase 1 = restrained
+- Phase 2 = denser and less safe
+- Phase 3 = highest tension
+
+3. Memorize start cue
+- subtle cue that tells players the area is safe to study
+
+4. Spawn lockdown cue
+- short sting when players are pulled back into Spawn and the door closes
+
+5. Investigation start cue
+- short release cue when Spawn opens and exploration begins
+
+6. Phase unlock cue
+- stronger cue when left or right area opens for the first time
+
+7. Checklist UI sounds
+- open
+- close
+- toggle / tick
+- submit
+- waiting for teammates
+
+8. Round result sounds
+- correct
+- wrong
+- victory
+
+9. Door sounds
+- Spawn room open / close
+- phase shop door open
+
+10. Anomaly emotion layer
+- optional subtle tension layer during investigation
+- anomaly-specific one-shots for light flicker, creature presence, dragged objects, electrical buzz, etc.
+
+### Smallest High-Impact Audio Pass
+
+If the team wants the fastest emotional improvement first, prioritize:
+
+1. base ambience
+2. Spawn room door open / close
+3. memorize -> lockdown -> investigation cues
+4. checklist submit / correct / wrong
+5. phase unlock cue
+6. anomaly-specific sounds
