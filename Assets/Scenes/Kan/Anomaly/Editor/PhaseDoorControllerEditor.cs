@@ -14,6 +14,11 @@ public class PhaseDoorControllerEditor : Editor
 
     private void OnEnable()
     {
+        if (target == null || targets == null || targets.Length == 0)
+        {
+            return;
+        }
+
         doorTransformProperty = serializedObject.FindProperty("doorTransform");
         closedLocalPositionProperty = serializedObject.FindProperty("closedLocalPosition");
         closedLocalEulerAnglesProperty = serializedObject.FindProperty("closedLocalEulerAngles");
@@ -24,6 +29,18 @@ public class PhaseDoorControllerEditor : Editor
 
     public override void OnInspectorGUI()
     {
+        if (target == null || serializedObject == null)
+        {
+            EditorGUILayout.HelpBox("Selected phase door object is no longer available.", MessageType.Info);
+            return;
+        }
+
+        if (doorTransformProperty == null)
+        {
+            EditorGUILayout.HelpBox("Inspector data is not available for this phase door object.", MessageType.Warning);
+            return;
+        }
+
         serializedObject.Update();
 
         EditorGUILayout.PropertyField(doorTransformProperty, new GUIContent("Door Transform"));

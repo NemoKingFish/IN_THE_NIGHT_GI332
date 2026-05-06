@@ -44233,19 +44233,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2142333963174309341, guid: fd9a0b6c96158cf4291ea793dcd09c5e, type: 3}
       propertyPath: m_LocalRotation.w
-      value: -0.2481643
+      value: 0.63943905
       objectReference: {fileID: 0}
     - target: {fileID: 2142333963174309341, guid: fd9a0b6c96158cf4291ea793dcd09c5e, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 9.763303e-18
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2142333963174309341, guid: fd9a0b6c96158cf4291ea793dcd09c5e, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.968718
+      value: 0.7688418
       objectReference: {fileID: 0}
     - target: {fileID: 2142333963174309341, guid: fd9a0b6c96158cf4291ea793dcd09c5e, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 1.2030783e-16
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2142333963174309341, guid: fd9a0b6c96158cf4291ea793dcd09c5e, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
@@ -44349,7 +44349,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8594438205957587431, guid: fd9a0b6c96158cf4291ea793dcd09c5e, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 2537803991167266457, guid: fd9a0b6c96158cf4291ea793dcd09c5e, type: 3}
@@ -44393,7 +44393,7 @@ MonoBehaviour:
   openLocalPosition: {x: 0.0007324399, y: 1.3544543, z: 0.00816345}
   openLocalEulerAngles: {x: -1.3632644e-14, y: 208.73782, z: -2.337464e-15}
   disableCollidersWhenOpen: 1
-  previewOpenInEditMode: 1
+  previewOpenInEditMode: 0
 --- !u!1 &689206305
 GameObject:
   m_ObjectHideFlags: 0
@@ -54238,53 +54238,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 2491640309016862925, guid: a0d42be6bf4ac0e4baacaf3b82906c1f, type: 3}
   m_PrefabInstance: {fileID: 827200989}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &828627240
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 828627241}
-  - component: {fileID: 828627242}
-  m_Layer: 0
-  m_Name: TeleportRoundControler
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &828627241
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 828627240}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -95.36598, y: 0.11199, z: 139.07884}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &828627242
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 828627240}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 11b054cfeb8818e4b87d1e802fdad5c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RoundEndPlayerRespawnController
-  gameRoundManager: {fileID: 859890424}
-  spawnManager: {fileID: 0}
-  debugLogRespawns: 0
 --- !u!1001 &829737352
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -56482,7 +56435,7 @@ PrefabInstance:
     - target: {fileID: 8181598168294842518, guid: 6b2793ed3edc0a8488890b94960baae1, type: 3}
       propertyPath: spawnRoomDoor
       value: 
-      objectReference: {fileID: 689203248}
+      objectReference: {fileID: 0}
     - target: {fileID: 8181598168294842518, guid: 6b2793ed3edc0a8488890b94960baae1, type: 3}
       propertyPath: 'phaseTwoDoors.Array.data[0]'
       value: 
@@ -56509,17 +56462,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6b2793ed3edc0a8488890b94960baae1, type: 3}
---- !u!114 &859890424 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 8249352470020966626, guid: 6b2793ed3edc0a8488890b94960baae1, type: 3}
-  m_PrefabInstance: {fileID: 859890423}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ffd5ea008166b4d40ac4eda62ad8fb73, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GameRoundManager
 --- !u!64 &860442948
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -166119,4 +166061,3 @@ SceneRoots:
   - {fileID: 1185308564}
   - {fileID: 567124079}
   - {fileID: 1467119856}
-  - {fileID: 828627241}

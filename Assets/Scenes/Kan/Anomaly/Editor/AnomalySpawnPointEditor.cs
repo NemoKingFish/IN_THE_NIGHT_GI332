@@ -27,6 +27,11 @@ public class AnomalySpawnPointEditor : Editor
 
     private void OnEnable()
     {
+        if (target == null || targets == null || targets.Length == 0)
+        {
+            return;
+        }
+
         preferSceneObjectAsNormalProperty = serializedObject.FindProperty("preferSceneObjectAsNormal");
         normalPrefabProperty = serializedObject.FindProperty("normalPrefab");
         anomalyPrefabProperty = serializedObject.FindProperty("anomalyPrefab");
@@ -97,6 +102,12 @@ public class AnomalySpawnPointEditor : Editor
 
     public override void OnInspectorGUI()
     {
+        if (target == null || serializedObject == null)
+        {
+            EditorGUILayout.HelpBox("Selected anomaly object is no longer available.", MessageType.Info);
+            return;
+        }
+
         if (!Application.isPlaying && target is AnomalySpawnPoint point)
         {
             if (point.SyncEditorGeneratedFieldsNow())
@@ -108,6 +119,12 @@ public class AnomalySpawnPointEditor : Editor
                     EditorSceneManager.MarkSceneDirty(point.gameObject.scene);
                 }
             }
+        }
+
+        if (assignedAnomalyTypesProperty == null)
+        {
+            EditorGUILayout.HelpBox("Inspector data is not available for this anomaly object.", MessageType.Warning);
+            return;
         }
 
         serializedObject.Update();

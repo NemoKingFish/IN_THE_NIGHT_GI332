@@ -123,6 +123,49 @@ public class PhotonScenePlayerSpawnManager : MonoBehaviourPunCallbacks, IOnEvent
         TeleportAvatarToSpawnPad(avatar, spawnPad);
     }
 
+    public void TeleportAllPlayersToAssignedSpawnPads()
+    {
+        if (!PhotonNetwork.InRoom)
+        {
+            return;
+        }
+
+        RefreshSpawnPads();
+        if (spawnPads.Count == 0)
+        {
+            return;
+        }
+
+        EnsurePlayerAvatars();
+
+        var players = PhotonNetwork.PlayerList;
+        Array.Sort(players, (left, right) => left.ActorNumber.CompareTo(right.ActorNumber));
+        RebuildSpawnAssignments(players);
+
+        for (var i = 0; i < players.Length; i++)
+        {
+            var player = players[i];
+            if (player == null)
+            {
+                continue;
+            }
+
+            if (!avatarsByActorNumber.TryGetValue(player.ActorNumber, out var avatar) || avatar == null)
+            {
+                continue;
+            }
+
+            var spawnIndex = GetAssignedSpawnPadIndex(player.ActorNumber);
+            var spawnPad = GetSpawnPadForAssignedIndex(spawnIndex);
+            if (spawnPad == null)
+            {
+                continue;
+            }
+
+            TeleportAvatarToSpawnPad(avatar, spawnPad);
+        }
+    }
+
     private void Start()
     {
         if (PhotonNetwork.InRoom)
