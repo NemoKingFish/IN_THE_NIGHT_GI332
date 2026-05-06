@@ -5,6 +5,9 @@ using Photon.Pun;
 using Photon.Realtime;
 using UnityEngine;
 using PhotonHashtable = ExitGames.Client.Photon.Hashtable;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public class ChecklistManager : MonoBehaviourPunCallbacks, IOnEventCallback
 {
@@ -19,9 +22,6 @@ public class ChecklistManager : MonoBehaviourPunCallbacks, IOnEventCallback
         Lose = 2
     }
 
-    [Header("Anomaly Group From Hierarchy")]
-    [SerializeField] private Transform anomalyGroup;
-
     [Header("Auto Filled Spawn Points")]
     [SerializeField] private AnomalySpawnPoint[] anomalyPoints;
 
@@ -30,8 +30,12 @@ public class ChecklistManager : MonoBehaviourPunCallbacks, IOnEventCallback
 
     public ObservableValue<ulong> checkedMask = new ObservableValue<ulong>(0);
     public ObservableValue<int> matchResult = new ObservableValue<int>((int)MatchResult.Playing);
+    public event Action AnomalyDataChanged;
 
     private ulong correctMask;
+    private int dataRevision;
+
+    public int DataRevision => dataRevision;
 
     private void Awake()
     {
@@ -42,10 +46,17 @@ public class ChecklistManager : MonoBehaviourPunCallbacks, IOnEventCallback
     {
         base.OnEnable();
         PhotonNetwork.AddCallbackTarget(this);
+#if UNITY_EDITOR
+        EditorApplication.hierarchyChanged -= OnEditorHierarchyChanged;
+        EditorApplication.hierarchyChanged += OnEditorHierarchyChanged;
+#endif
     }
 
     public override void OnDisable()
     {
+#if UNITY_EDITOR
+        EditorApplication.hierarchyChanged -= OnEditorHierarchyChanged;
+#endif
         PhotonNetwork.RemoveCallbackTarget(this);
         base.OnDisable();
     }
@@ -82,24 +93,51 @@ public class ChecklistManager : MonoBehaviourPunCallbacks, IOnEventCallback
 #endif
 
     [ContextMenu("Refresh Anomaly Data")]
-    public void RefreshAnomalyData()
+    public bool RefreshAnomalyData()
     {
-        RefreshAnomalyPoints();
-        RefreshChecklistTypesFromEnum();
-    }
+        var nextPoints = CollectAnomalyPoints();
+        var nextTypes = BuildChecklistTypesFromEnum();
+        var pointsChanged = !AreSamePoints(anomalyPoints, nextPoints);
+        var typesChanged = !AreSameTypes(checklistTypes, nextTypes);
 
-    private void RefreshAnomalyPoints()
-    {
-        if (anomalyGroup == null)
+        if (!pointsChanged && !typesChanged)
         {
-            anomalyPoints = Array.Empty<AnomalySpawnPoint>();
-            return;
+            return false;
         }
 
-        anomalyPoints = anomalyGroup.GetComponentsInChildren<AnomalySpawnPoint>(true);
+        anomalyPoints = nextPoints;
+        checklistTypes = nextTypes;
+        dataRevision++;
+        AnomalyDataChanged?.Invoke();
+        return true;
     }
 
-    private void RefreshChecklistTypesFromEnum()
+    private AnomalySpawnPoint[] CollectAnomalyPoints()
+    {
+        var scenePoints = FindObjectsByType<AnomalySpawnPoint>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        var filteredPoints = new List<AnomalySpawnPoint>();
+
+        for (var i = 0; i < scenePoints.Length; i++)
+        {
+            var point = scenePoints[i];
+            if (point == null)
+            {
+                continue;
+            }
+
+            if (point.gameObject.scene != gameObject.scene)
+            {
+                continue;
+            }
+
+            filteredPoints.Add(point);
+        }
+
+        filteredPoints.Sort(CompareAnomalyPoints);
+        return filteredPoints.ToArray();
+    }
+
+    private AnomalyType[] BuildChecklistTypesFromEnum()
     {
         var allTypes = new List<AnomalyType>();
         var enumValues = (AnomalyType[])Enum.GetValues(typeof(AnomalyType));
@@ -114,8 +152,115 @@ public class ChecklistManager : MonoBehaviourPunCallbacks, IOnEventCallback
             allTypes.Add(enumValues[i]);
         }
 
-        checklistTypes = allTypes.ToArray();
+        return allTypes.ToArray();
     }
+
+    private static bool AreSamePoints(AnomalySpawnPoint[] current, AnomalySpawnPoint[] next)
+    {
+        if (ReferenceEquals(current, next))
+        {
+            return true;
+        }
+
+        if (current == null || next == null || current.Length != next.Length)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < current.Length; i++)
+        {
+            if (current[i] != next[i])
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool AreSameTypes(AnomalyType[] current, AnomalyType[] next)
+    {
+        if (ReferenceEquals(current, next))
+        {
+            return true;
+        }
+
+        if (current == null || next == null || current.Length != next.Length)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < current.Length; i++)
+        {
+            if (current[i] != next[i])
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static int CompareAnomalyPoints(AnomalySpawnPoint left, AnomalySpawnPoint right)
+    {
+        if (left == right)
+        {
+            return 0;
+        }
+
+        if (left == null)
+        {
+            return 1;
+        }
+
+        if (right == null)
+        {
+            return -1;
+        }
+
+        var leftId = left.GetAnomalyID();
+        var rightId = right.GetAnomalyID();
+        if (leftId > 0 && rightId > 0 && leftId != rightId)
+        {
+            return leftId.CompareTo(rightId);
+        }
+
+        return string.CompareOrdinal(GetHierarchyPath(left.transform), GetHierarchyPath(right.transform));
+    }
+
+    private static string GetHierarchyPath(Transform target)
+    {
+        if (target == null)
+        {
+            return string.Empty;
+        }
+
+        var hierarchyPath = target.GetSiblingIndex().ToString("D4");
+        var current = target.parent;
+
+        while (current != null)
+        {
+            hierarchyPath = $"{current.GetSiblingIndex():D4}/{hierarchyPath}";
+            current = current.parent;
+        }
+
+        return hierarchyPath;
+    }
+
+#if UNITY_EDITOR
+    private void OnEditorHierarchyChanged()
+    {
+        if (this == null || gameObject == null || Application.isPlaying)
+        {
+            return;
+        }
+
+        if (RefreshAnomalyData())
+        {
+            EditorUtility.SetDirty(this);
+        }
+    }
+#endif
 
     public int GetItemCount()
     {

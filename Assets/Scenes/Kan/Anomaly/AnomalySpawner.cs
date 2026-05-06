@@ -10,6 +10,9 @@ using UnityEditor;
 
 public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
 {
+    private static readonly int BaseColorPropertyId = Shader.PropertyToID("_BaseColor");
+    private static readonly int ColorPropertyId = Shader.PropertyToID("_Color");
+
     [Header("Normal State")]
     [SerializeField] private bool preferSceneObjectAsNormal = true;
     [SerializeField] private GameObject normalPrefab;
@@ -29,6 +32,12 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
     [Header("Moved Object")]
     [SerializeField] private Vector3 movedLocalPositionOffset = Vector3.zero;
     [SerializeField] private Vector3 movedLocalEulerOffset = Vector3.zero;
+
+    [Header("Changed Object Overrides")]
+    [SerializeField] private bool overrideChangedObjectScale;
+    [SerializeField] private Vector3 changedObjectScaleMultiplier = Vector3.one;
+    [SerializeField] private bool overrideChangedObjectColor;
+    [SerializeField] private Color changedObjectColor = Color.white;
 
     [Header("Editor Preview")]
     [SerializeField] private bool previewAnomalyInEditMode;
@@ -177,6 +186,7 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
     private void ApplyPresentation(AnomalyType nextType)
     {
         RestoreSceneObjectTransform();
+        RestoreSceneObjectAppearance();
 
         if (nextType == AnomalyType.None)
         {
@@ -225,6 +235,12 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
             return;
         }
 
+        if (nextType == AnomalyType.ChangedObject && (HasChangedObjectOverrides() || anomalyPrefab == null))
+        {
+            ApplyChangedObjectPresentation(anomalyLocalPosition, anomalyLocalRotation);
+            return;
+        }
+
         var prefabToSpawn = ResolveAnomalyPrefab(nextType);
 
         SetSceneObjectVisible(false);
@@ -233,6 +249,11 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
         {
             currentSpawnedObject = InstantiateManagedPrefab(prefabToSpawn, anomalyLocalPosition, anomalyLocalRotation, false);
         }
+    }
+
+    private bool HasChangedObjectOverrides()
+    {
+        return overrideChangedObjectScale || overrideChangedObjectColor;
     }
 
     private GameObject ResolveAnomalyPrefab(AnomalyType nextType)
@@ -264,6 +285,59 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
         if (normalPrefab != null)
         {
             currentSpawnedObject = InstantiateManagedPrefab(normalPrefab, anomalyLocalPosition, anomalyLocalRotation, true);
+        }
+    }
+
+    private void ApplyChangedObjectPresentation(Vector3 anomalyLocalPosition, Quaternion anomalyLocalRotation)
+    {
+        if (useSceneObjectAsNormal)
+        {
+            SetSceneObjectVisible(true);
+            ApplySceneObjectTransform(anomalyLocalPosition, anomalyLocalRotation);
+            ApplyChangedObjectOverrides(transform, managedRenderers, true);
+            return;
+        }
+
+        SetSceneObjectVisible(false);
+
+        var changedObjectBasePrefab = normalPrefab != null ? normalPrefab : anomalyPrefab;
+        if (changedObjectBasePrefab == null)
+        {
+            return;
+        }
+
+        var useOriginalScaleBase = normalPrefab != null;
+        currentSpawnedObject = InstantiateManagedPrefab(
+            changedObjectBasePrefab,
+            anomalyLocalPosition,
+            anomalyLocalRotation,
+            useOriginalScaleBase);
+
+        if (currentSpawnedObject == null)
+        {
+            return;
+        }
+
+        var instanceRenderers = currentSpawnedObject.GetComponentsInChildren<Renderer>(true);
+        ApplyChangedObjectOverrides(currentSpawnedObject.transform, instanceRenderers, useOriginalScaleBase);
+    }
+
+    private void ApplyChangedObjectOverrides(Transform targetTransform, Renderer[] targetRenderers, bool useOriginalScaleBase)
+    {
+        if (targetTransform == null)
+        {
+            return;
+        }
+
+        if (overrideChangedObjectScale)
+        {
+            var baseScale = useOriginalScaleBase ? originalLocalScale : targetTransform.localScale;
+            targetTransform.localScale = Vector3.Scale(baseScale, changedObjectScaleMultiplier);
+        }
+
+        if (overrideChangedObjectColor)
+        {
+            ApplyRendererColorOverride(targetRenderers, changedObjectColor);
         }
     }
 
@@ -319,6 +393,11 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
         managedColliders2D = GetComponentsInChildren<Collider2D>(true);
         managedCanvases = GetComponentsInChildren<Canvas>(true);
         managedLights = GetComponentsInChildren<Light>(true);
+    }
+
+    private void RestoreSceneObjectAppearance()
+    {
+        ClearRendererColorOverride(managedRenderers);
     }
 
     private bool ShouldUseSceneObjectAsNormal()
@@ -414,6 +493,89 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
         }
 
         return originalLocalRotation * Quaternion.Euler(movedLocalEulerOffset);
+    }
+
+    private static void ApplyRendererColorOverride(Renderer[] renderers, Color color)
+    {
+        if (renderers == null)
+        {
+            return;
+        }
+
+        var propertyBlock = new MaterialPropertyBlock();
+
+        for (var rendererIndex = 0; rendererIndex < renderers.Length; rendererIndex++)
+        {
+            var renderer = renderers[rendererIndex];
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            var materials = renderer.sharedMaterials;
+            if (materials == null || materials.Length == 0)
+            {
+                continue;
+            }
+
+            for (var materialIndex = 0; materialIndex < materials.Length; materialIndex++)
+            {
+                var material = materials[materialIndex];
+                if (material == null)
+                {
+                    continue;
+                }
+
+                var canWriteColor = false;
+                propertyBlock.Clear();
+
+                if (material.HasProperty(BaseColorPropertyId))
+                {
+                    propertyBlock.SetColor(BaseColorPropertyId, color);
+                    canWriteColor = true;
+                }
+
+                if (material.HasProperty(ColorPropertyId))
+                {
+                    propertyBlock.SetColor(ColorPropertyId, color);
+                    canWriteColor = true;
+                }
+
+                if (canWriteColor)
+                {
+                    renderer.SetPropertyBlock(propertyBlock, materialIndex);
+                }
+            }
+        }
+    }
+
+    private static void ClearRendererColorOverride(Renderer[] renderers)
+    {
+        if (renderers == null)
+        {
+            return;
+        }
+
+        for (var rendererIndex = 0; rendererIndex < renderers.Length; rendererIndex++)
+        {
+            var renderer = renderers[rendererIndex];
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            var materials = renderer.sharedMaterials;
+            if (materials == null || materials.Length == 0)
+            {
+                renderer.SetPropertyBlock(null);
+                continue;
+            }
+
+            for (var materialIndex = 0; materialIndex < materials.Length; materialIndex++)
+            {
+                renderer.SetPropertyBlock(null, materialIndex);
+            }
+        }
     }
 
     public bool HasAnomaly()
