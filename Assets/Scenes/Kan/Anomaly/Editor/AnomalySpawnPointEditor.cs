@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.SceneManagement;
+using UnityEditorInternal;
 using UnityEngine;
 
 [CustomEditor(typeof(AnomalySpawnPoint))]
@@ -10,7 +12,7 @@ public class AnomalySpawnPointEditor : Editor
     private SerializedProperty anomalyPrefabProperty;
     private SerializedProperty anomalyIdProperty;
     private SerializedProperty anomalyNameProperty;
-    private SerializedProperty assignedAnomalyTypeProperty;
+    private SerializedProperty assignedAnomalyTypesProperty;
     private SerializedProperty anomalyPhaseProperty;
     private SerializedProperty anomalyChanceProperty;
     private SerializedProperty movedLocalPositionOffsetProperty;
@@ -21,6 +23,7 @@ public class AnomalySpawnPointEditor : Editor
     private SerializedProperty changedObjectColorProperty;
     private SerializedProperty normalAudioSettingsProperty;
     private SerializedProperty anomalyAudioSettingsProperty;
+    private ReorderableList assignedAnomalyTypesList;
 
     private void OnEnable()
     {
@@ -29,7 +32,7 @@ public class AnomalySpawnPointEditor : Editor
         anomalyPrefabProperty = serializedObject.FindProperty("anomalyPrefab");
         anomalyIdProperty = serializedObject.FindProperty("anomalyID");
         anomalyNameProperty = serializedObject.FindProperty("anomalyName");
-        assignedAnomalyTypeProperty = serializedObject.FindProperty("assignedAnomalyType");
+        assignedAnomalyTypesProperty = serializedObject.FindProperty("assignedAnomalyTypes");
         anomalyPhaseProperty = serializedObject.FindProperty("anomalyPhase");
         anomalyChanceProperty = serializedObject.FindProperty("anomalyChance");
         movedLocalPositionOffsetProperty = serializedObject.FindProperty("movedLocalPositionOffset");
@@ -40,6 +43,56 @@ public class AnomalySpawnPointEditor : Editor
         changedObjectColorProperty = serializedObject.FindProperty("changedObjectColor");
         normalAudioSettingsProperty = serializedObject.FindProperty("normalAudioSettings");
         anomalyAudioSettingsProperty = serializedObject.FindProperty("anomalyAudioSettings");
+
+        assignedAnomalyTypesList = new ReorderableList(serializedObject, assignedAnomalyTypesProperty, true, true, true, true);
+        assignedAnomalyTypesList.drawHeaderCallback = rect =>
+        {
+            EditorGUI.LabelField(rect, "Possible Anomaly Types");
+        };
+        assignedAnomalyTypesList.drawElementCallback = (rect, index, active, focused) =>
+        {
+            if (index < 0 || index >= assignedAnomalyTypesProperty.arraySize)
+            {
+                return;
+            }
+
+            var element = assignedAnomalyTypesProperty.GetArrayElementAtIndex(index);
+            rect.y += 2f;
+            rect.height = EditorGUIUtility.singleLineHeight;
+            element.enumValueIndex = (int)DrawAnomalyTypePopup(rect, new GUIContent($"Type {index + 1}"), (AnomalyType)element.enumValueIndex);
+        };
+        assignedAnomalyTypesList.onAddDropdownCallback = (rect, list) =>
+        {
+            var menu = new GenericMenu();
+            var existingTypes = GetAssignedTypesFromProperty();
+            var addedAny = false;
+
+            foreach (AnomalyType anomalyType in System.Enum.GetValues(typeof(AnomalyType)))
+            {
+                if (anomalyType == AnomalyType.None || existingTypes.Contains(anomalyType))
+                {
+                    continue;
+                }
+
+                addedAny = true;
+                menu.AddItem(new GUIContent(anomalyType.ToString()), false, () =>
+                {
+                    var nextIndex = assignedAnomalyTypesProperty.arraySize;
+                    assignedAnomalyTypesProperty.InsertArrayElementAtIndex(nextIndex);
+                    assignedAnomalyTypesProperty.GetArrayElementAtIndex(nextIndex).enumValueIndex = (int)anomalyType;
+                    serializedObject.ApplyModifiedProperties();
+                    serializedObject.Update();
+                });
+            }
+
+            if (!addedAny)
+            {
+                menu.AddDisabledItem(new GUIContent("All anomaly types already added"));
+            }
+
+            menu.DropDown(rect);
+        };
+        assignedAnomalyTypesList.onCanRemoveCallback = list => assignedAnomalyTypesProperty.arraySize > 1;
     }
 
     public override void OnInspectorGUI()
@@ -59,8 +112,12 @@ public class AnomalySpawnPointEditor : Editor
 
         serializedObject.Update();
 
-        var anomalyType = (AnomalyType)assignedAnomalyTypeProperty.enumValueIndex;
         var usesSceneObjectAsNormal = preferSceneObjectAsNormalProperty.boolValue;
+        var usesMovedObject = PropertyContainsType(AnomalyType.MovedObject);
+        var usesChangedObject = PropertyContainsType(AnomalyType.ChangedObject);
+        var usesMissingObject = PropertyContainsType(AnomalyType.MissingObject);
+        var usesStrangeSound = PropertyContainsType(AnomalyType.StrangeSound);
+        var hasMultipleTypes = assignedAnomalyTypesProperty.arraySize > 1;
 
         EditorGUILayout.PropertyField(preferSceneObjectAsNormalProperty, new GUIContent("Use Scene Object As Normal"));
         EditorGUILayout.PropertyField(normalPrefabProperty, new GUIContent("Fallback Normal Prefab"));
@@ -74,19 +131,15 @@ public class AnomalySpawnPointEditor : Editor
         }
 
         EditorGUILayout.Space(4f);
-        using (new EditorGUI.DisabledScope(anomalyType == AnomalyType.MissingObject || anomalyType == AnomalyType.MovedObject))
-        {
-            EditorGUILayout.PropertyField(anomalyPrefabProperty, new GUIContent("Anomaly Prefab"));
-        }
+        EditorGUILayout.PropertyField(anomalyPrefabProperty, new GUIContent("Anomaly Prefab"));
 
-        if (anomalyType == AnomalyType.MissingObject)
+        if (usesMissingObject)
         {
-            anomalyPrefabProperty.objectReferenceValue = null;
             EditorGUILayout.HelpBox("Missing Object does not use Anomaly Prefab. The normal object will simply be hidden when this anomaly is active.", MessageType.None);
         }
-        else if (anomalyType == AnomalyType.MovedObject)
+
+        if (usesMovedObject)
         {
-            anomalyPrefabProperty.objectReferenceValue = null;
             EditorGUILayout.HelpBox("Moved Object does not use Anomaly Prefab. It moves the normal object by the offsets below. If this is an old empty spawn-point setup, Fallback Normal Prefab is used instead.", MessageType.None);
         }
 
@@ -98,27 +151,36 @@ public class AnomalySpawnPointEditor : Editor
         }
 
         EditorGUILayout.HelpBox("Anomaly ID runs automatically from 1 and avoids duplicates in Edit Mode. Anomaly Name follows the current object name automatically.", MessageType.None);
-        EditorGUILayout.PropertyField(assignedAnomalyTypeProperty, new GUIContent("Assigned Anomaly Type"));
+        assignedAnomalyTypesList.DoLayoutList();
+        if (assignedAnomalyTypesProperty.arraySize == 0)
+        {
+            EditorGUILayout.HelpBox("Add at least 1 anomaly type. If this list is empty, the object will always stay normal.", MessageType.Warning);
+        }
+        else if (hasMultipleTypes)
+        {
+            EditorGUILayout.HelpBox("This object can now roll multiple anomaly types, but only 1 type is chosen when the anomaly spawns. The selected types share the same prefab, moved offsets, changed-object overrides, and audio settings on this spawn point.", MessageType.Info);
+        }
+
         EditorGUILayout.IntSlider(anomalyPhaseProperty, 1, 3, new GUIContent("Anomaly Phase"));
 
         EditorGUILayout.Space(4f);
-        EditorGUILayout.Slider(anomalyChanceProperty, 0f, 100f, new GUIContent("Anomaly Chance"));
+        EditorGUILayout.Slider(anomalyChanceProperty, 0f, 50f, new GUIContent("Anomaly Chance"));
 
         EditorGUILayout.Space(4f);
 
-        using (new EditorGUI.DisabledScope(anomalyType != AnomalyType.MovedObject))
+        using (new EditorGUI.DisabledScope(!usesMovedObject))
         {
             EditorGUILayout.PropertyField(movedLocalPositionOffsetProperty, new GUIContent("Moved Local Position Offset"));
             EditorGUILayout.PropertyField(movedLocalEulerOffsetProperty, new GUIContent("Moved Local Euler Offset"));
         }
 
-        if (anomalyType != AnomalyType.MovedObject)
+        if (!usesMovedObject)
         {
-            EditorGUILayout.HelpBox("Moved offsets are active only when Assigned Anomaly Type is set to MovedObject.", MessageType.None);
+            EditorGUILayout.HelpBox("Moved offsets are active only when one of the possible anomaly types is set to MovedObject.", MessageType.None);
         }
 
         EditorGUILayout.Space(4f);
-        using (new EditorGUI.DisabledScope(anomalyType != AnomalyType.ChangedObject))
+        using (new EditorGUI.DisabledScope(!usesChangedObject))
         {
             EditorGUILayout.PropertyField(overrideChangedObjectScaleProperty, new GUIContent("Override Changed Scale"));
             if (overrideChangedObjectScaleProperty.boolValue)
@@ -133,20 +195,20 @@ public class AnomalySpawnPointEditor : Editor
             }
         }
 
-        if (anomalyType == AnomalyType.ChangedObject)
+        if (usesChangedObject)
         {
             EditorGUILayout.HelpBox("Changed Object can now reuse the normal object and apply optional scale/color overrides directly from the Inspector. Anomaly Prefab is optional for this type.", MessageType.None);
         }
         else
         {
-            EditorGUILayout.HelpBox("Changed Object overrides are active only when Assigned Anomaly Type is set to ChangedObject.", MessageType.None);
+            EditorGUILayout.HelpBox("Changed Object overrides are active only when one of the possible anomaly types is set to ChangedObject.", MessageType.None);
         }
 
         EditorGUILayout.Space(4f);
         EditorGUILayout.PropertyField(normalAudioSettingsProperty, new GUIContent("Normal Audio"), true);
         EditorGUILayout.PropertyField(anomalyAudioSettingsProperty, new GUIContent("Anomaly Audio"), true);
 
-        if (anomalyType == AnomalyType.StrangeSound)
+        if (usesStrangeSound)
         {
             EditorGUILayout.HelpBox("StrangeSound can keep the same object visible and swap from the normal clip to the anomaly clip. If Anomaly Prefab is empty, the normal visual object stays in place and only the sound changes.", MessageType.None);
         }
@@ -160,6 +222,33 @@ public class AnomalySpawnPointEditor : Editor
         {
             if (target is AnomalySpawnPoint previewPoint)
             {
+                if (assignedAnomalyTypesProperty.arraySize > 1)
+                {
+                    var assignedTypes = previewPoint.GetAssignedAnomalyTypes();
+                    var previewOptions = new string[assignedTypes.Count];
+                    for (var index = 0; index < assignedTypes.Count; index++)
+                    {
+                        previewOptions[index] = assignedTypes[index].ToString();
+                    }
+
+                    var nextPreviewIndex = EditorGUILayout.Popup(
+                        new GUIContent("Preview Type"),
+                        previewPoint.GetPreviewAssignedAnomalyTypeIndex(),
+                        previewOptions);
+
+                    if (nextPreviewIndex != previewPoint.GetPreviewAssignedAnomalyTypeIndex())
+                    {
+                        Undo.RecordObject(previewPoint, "Change Preview Anomaly Type");
+                        previewPoint.SetPreviewAssignedAnomalyTypeIndex(nextPreviewIndex);
+                        EditorUtility.SetDirty(previewPoint);
+
+                        if (previewPoint.gameObject.scene.IsValid())
+                        {
+                            EditorSceneManager.MarkSceneDirty(previewPoint.gameObject.scene);
+                        }
+                    }
+                }
+
                 var nextPreviewState = EditorGUILayout.Toggle(
                     new GUIContent("Preview Anomaly In Edit Mode"),
                     previewPoint.IsPreviewAnomalyInEditMode());
@@ -190,6 +279,84 @@ public class AnomalySpawnPointEditor : Editor
         }
 
         serializedObject.ApplyModifiedProperties();
+    }
+
+    private bool PropertyContainsType(AnomalyType anomalyType)
+    {
+        for (var index = 0; index < assignedAnomalyTypesProperty.arraySize; index++)
+        {
+            var element = assignedAnomalyTypesProperty.GetArrayElementAtIndex(index);
+            if ((AnomalyType)element.enumValueIndex == anomalyType)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private HashSet<AnomalyType> GetAssignedTypesFromProperty()
+    {
+        var assignedTypes = new HashSet<AnomalyType>();
+        for (var index = 0; index < assignedAnomalyTypesProperty.arraySize; index++)
+        {
+            var element = assignedAnomalyTypesProperty.GetArrayElementAtIndex(index);
+            var anomalyType = (AnomalyType)element.enumValueIndex;
+            if (anomalyType != AnomalyType.None)
+            {
+                assignedTypes.Add(anomalyType);
+            }
+        }
+
+        return assignedTypes;
+    }
+
+    private static AnomalyType DrawAnomalyTypePopup(Rect rect, GUIContent label, AnomalyType currentType)
+    {
+        var options = GetSelectableAnomalyTypeValues();
+        var optionLabels = GetSelectableAnomalyTypeNames();
+        var selectedIndex = 0;
+
+        for (var index = 0; index < options.Length; index++)
+        {
+            if (options[index] == currentType)
+            {
+                selectedIndex = index;
+                break;
+            }
+        }
+
+        var nextIndex = EditorGUI.Popup(rect, label.text, selectedIndex, optionLabels);
+        return options[Mathf.Clamp(nextIndex, 0, options.Length - 1)];
+    }
+
+    private static AnomalyType[] GetSelectableAnomalyTypeValues()
+    {
+        return new[]
+        {
+            AnomalyType.MissingObject,
+            AnomalyType.MovedObject,
+            AnomalyType.ExtraObject,
+            AnomalyType.ChangedObject,
+            AnomalyType.StrangeLight,
+            AnomalyType.StrangeSound,
+            AnomalyType.PictureChanged,
+            AnomalyType.MultiplyingObject,
+            AnomalyType.Creature,
+            AnomalyType.Other
+        };
+    }
+
+    private static string[] GetSelectableAnomalyTypeNames()
+    {
+        var values = GetSelectableAnomalyTypeValues();
+        var names = new string[values.Length];
+        for (var index = 0; index < values.Length; index++)
+        {
+            names[index] = values[index].ToString();
+        }
+
+        return names;
     }
 }
 

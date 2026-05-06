@@ -9,6 +9,7 @@ public class PhaseDoorController : MonoBehaviour
     [SerializeField] private Vector3 openLocalPosition;
     [SerializeField] private Vector3 openLocalEulerAngles;
     [SerializeField] private bool disableCollidersWhenOpen = true;
+    [SerializeField] private bool previewOpenInEditMode;
 
     private Collider[] cachedColliders;
     private Collider2D[] cachedColliders2D;
@@ -16,14 +17,22 @@ public class PhaseDoorController : MonoBehaviour
 
     private void Awake()
     {
-        if (doorTransform == null)
+        EnsureDoorTransform();
+        CacheColliders();
+        ApplyStateInstant(isOpen);
+    }
+
+    private void OnValidate()
+    {
+        EnsureDoorTransform();
+        CacheColliders();
+
+        if (Application.isPlaying)
         {
-            doorTransform = transform;
+            return;
         }
 
-        cachedColliders = GetComponentsInChildren<Collider>(true);
-        cachedColliders2D = GetComponentsInChildren<Collider2D>(true);
-        ApplyStateInstant(isOpen);
+        ApplyEditorPreview();
     }
 
     public void SetOpen(bool shouldOpen)
@@ -42,8 +51,26 @@ public class PhaseDoorController : MonoBehaviour
         return isOpen;
     }
 
+    public bool IsPreviewOpenInEditMode()
+    {
+        return previewOpenInEditMode;
+    }
+
+    public void SetPreviewOpenInEditMode(bool shouldPreviewOpen)
+    {
+        previewOpenInEditMode = shouldPreviewOpen;
+
+        if (!Application.isPlaying)
+        {
+            ApplyEditorPreview();
+        }
+    }
+
     private void ApplyStateInstant(bool shouldOpen)
     {
+        EnsureDoorTransform();
+        CacheColliders();
+
         if (doorTransform == null)
         {
             return;
@@ -72,6 +99,32 @@ public class PhaseDoorController : MonoBehaviour
             {
                 cachedColliders2D[i].enabled = collidersEnabled;
             }
+        }
+    }
+
+    private void ApplyEditorPreview()
+    {
+        ApplyStateInstant(previewOpenInEditMode);
+    }
+
+    private void EnsureDoorTransform()
+    {
+        if (doorTransform == null)
+        {
+            doorTransform = transform;
+        }
+    }
+
+    private void CacheColliders()
+    {
+        if (cachedColliders == null || cachedColliders.Length == 0)
+        {
+            cachedColliders = GetComponentsInChildren<Collider>(true);
+        }
+
+        if (cachedColliders2D == null || cachedColliders2D.Length == 0)
+        {
+            cachedColliders2D = GetComponentsInChildren<Collider2D>(true);
         }
     }
 }

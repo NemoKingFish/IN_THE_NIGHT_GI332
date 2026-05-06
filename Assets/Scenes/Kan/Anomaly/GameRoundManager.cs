@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using ExitGames.Client.Photon;
 using Photon.Pun;
 using Photon.Realtime;
@@ -34,6 +35,14 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
         Wrong = 2
     }
 
+    [Serializable]
+    private class ProgressionPhaseAnomalySpawnSettings
+    {
+        [Min(0)] public int minAnomalyCount = 1;
+        [Min(0)] public int maxAnomalyCount = 2;
+        [Range(0f, 100f)] public float emptyRoomChance = 0f;
+    }
+
     [Header("References")]
     [SerializeField] private ChecklistManager checklistManager;
 
@@ -48,6 +57,12 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
     [SerializeField] private float phaseOneExplorationDuration = 120f;
     [SerializeField] private float phaseTwoExplorationDuration = 180f;
     [SerializeField] private float phaseThreeExplorationDuration = 240f;
+
+    [Header("Anomaly Spawn Rules")]
+    [SerializeField] private ProgressionPhaseAnomalySpawnSettings phaseOneAnomalySpawnSettings = new ProgressionPhaseAnomalySpawnSettings();
+    [SerializeField] private ProgressionPhaseAnomalySpawnSettings phaseTwoAnomalySpawnSettings = new ProgressionPhaseAnomalySpawnSettings();
+    [SerializeField] private ProgressionPhaseAnomalySpawnSettings phaseThreeAnomalySpawnSettings = new ProgressionPhaseAnomalySpawnSettings();
+    [SerializeField] private bool debugLogSpawnedAnomalies = true;
 
     [Header("Scene Flow")]
     [SerializeField] private string victoryTargetSceneName = "";
@@ -83,6 +98,9 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
         phaseTwoExplorationDuration = Mathf.Max(1f, phaseTwoExplorationDuration);
         phaseThreeExplorationDuration = Mathf.Max(1f, phaseThreeExplorationDuration);
         memorizeDuration = Mathf.Max(0f, memorizeDuration);
+        SanitizeAnomalySpawnSettings(phaseOneAnomalySpawnSettings);
+        SanitizeAnomalySpawnSettings(phaseTwoAnomalySpawnSettings);
+        SanitizeAnomalySpawnSettings(phaseThreeAnomalySpawnSettings);
     }
 #endif
 
@@ -574,15 +592,59 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
             return;
         }
 
+        var eligiblePoints = new List<AnomalySpawnPoint>();
         var count = checklistManager.GetPointCount();
         for (var i = 0; i < count; i++)
         {
             var point = checklistManager.GetPoint(i);
-            if (point != null)
+            if (point == null)
             {
-                point.RollAndSpawn(progressionPhase);
+                continue;
+            }
+
+            point.SpawnNormal();
+
+            if (point.CanSpawnAnomalyInProgressionPhase(progressionPhase))
+            {
+                eligiblePoints.Add(point);
             }
         }
+
+        if (eligiblePoints.Count == 0)
+        {
+            LogSpawnedAnomalies(progressionPhase, null, "No eligible anomaly points were available for this phase.");
+            return;
+        }
+
+        var settings = GetAnomalySpawnSettingsForProgressionPhase(progressionPhase);
+        if (ShouldSpawnNoAnomalies(settings))
+        {
+            LogSpawnedAnomalies(progressionPhase, null, "Empty room roll succeeded.");
+            return;
+        }
+
+        var anomalyCount = GetRandomAnomalyCount(settings, eligiblePoints.Count);
+        if (anomalyCount <= 0)
+        {
+            LogSpawnedAnomalies(progressionPhase, null, "Resolved anomaly count was 0.");
+            return;
+        }
+
+        ShuffleEligiblePoints(eligiblePoints);
+        var spawnedPoints = new List<AnomalySpawnPoint>(anomalyCount);
+
+        for (var index = 0; index < anomalyCount; index++)
+        {
+            var point = eligiblePoints[index];
+            point.SpawnAnomaly(progressionPhase);
+
+            if (point.HasAnomaly())
+            {
+                spawnedPoints.Add(point);
+            }
+        }
+
+        LogSpawnedAnomalies(progressionPhase, spawnedPoints, null);
     }
 
     private void PrepareChecklistForRound()
@@ -777,6 +839,111 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
     private int GetExplorationDurationForCurrentPhase()
     {
         return GetExplorationDurationForProgressionPhase(currentProgressionPhase.Value);
+    }
+
+    private ProgressionPhaseAnomalySpawnSettings GetAnomalySpawnSettingsForProgressionPhase(int progressionPhase)
+    {
+        return progressionPhase switch
+        {
+            1 => phaseOneAnomalySpawnSettings,
+            2 => phaseTwoAnomalySpawnSettings,
+            _ => phaseThreeAnomalySpawnSettings
+        };
+    }
+
+    private static void SanitizeAnomalySpawnSettings(ProgressionPhaseAnomalySpawnSettings settings)
+    {
+        if (settings == null)
+        {
+            return;
+        }
+
+        settings.minAnomalyCount = Mathf.Max(0, settings.minAnomalyCount);
+        settings.maxAnomalyCount = Mathf.Max(settings.minAnomalyCount, settings.maxAnomalyCount);
+        settings.emptyRoomChance = Mathf.Clamp(settings.emptyRoomChance, 0f, 100f);
+    }
+
+    private static bool ShouldSpawnNoAnomalies(ProgressionPhaseAnomalySpawnSettings settings)
+    {
+        if (settings == null)
+        {
+            return false;
+        }
+
+        return UnityEngine.Random.Range(0f, 100f) < Mathf.Clamp(settings.emptyRoomChance, 0f, 100f);
+    }
+
+    private static int GetRandomAnomalyCount(ProgressionPhaseAnomalySpawnSettings settings, int eligibleCount)
+    {
+        if (settings == null || eligibleCount <= 0)
+        {
+            return 0;
+        }
+
+        var minCount = Mathf.Clamp(settings.minAnomalyCount, 1, eligibleCount);
+        var maxCount = Mathf.Clamp(settings.maxAnomalyCount, minCount, eligibleCount);
+        return UnityEngine.Random.Range(minCount, maxCount + 1);
+    }
+
+    private static void ShuffleEligiblePoints(List<AnomalySpawnPoint> eligiblePoints)
+    {
+        if (eligiblePoints == null)
+        {
+            return;
+        }
+
+        for (var index = eligiblePoints.Count - 1; index > 0; index--)
+        {
+            var swapIndex = UnityEngine.Random.Range(0, index + 1);
+            (eligiblePoints[index], eligiblePoints[swapIndex]) = (eligiblePoints[swapIndex], eligiblePoints[index]);
+        }
+    }
+
+    private void LogSpawnedAnomalies(int progressionPhase, List<AnomalySpawnPoint> spawnedPoints, string reason)
+    {
+        if (!debugLogSpawnedAnomalies)
+        {
+            return;
+        }
+
+        if (spawnedPoints == null || spawnedPoints.Count == 0)
+        {
+            var emptyReason = string.IsNullOrWhiteSpace(reason) ? "No anomalies spawned." : reason;
+            Debug.Log($"[GameRoundManager] Phase {progressionPhase} spawned no anomalies. {emptyReason}", this);
+            return;
+        }
+
+        var builder = new System.Text.StringBuilder();
+        builder.Append($"[GameRoundManager] Phase {progressionPhase} spawned {spawnedPoints.Count} anomaly");
+        if (spawnedPoints.Count != 1)
+        {
+            builder.Append("ies");
+        }
+        else
+        {
+            builder.Append("y");
+        }
+
+        builder.AppendLine(":");
+
+        for (var index = 0; index < spawnedPoints.Count; index++)
+        {
+            var point = spawnedPoints[index];
+            if (point == null)
+            {
+                continue;
+            }
+
+            builder.Append("- ID: ");
+            builder.Append(point.GetAnomalyID());
+            builder.Append(" | Name: ");
+            builder.Append(point.GetAnomalyName());
+            builder.Append(" | Type: ");
+            builder.Append(point.GetCurrentAnomalyType());
+            builder.AppendLine();
+        }
+
+        Debug.Log(builder.ToString().TrimEnd(), this);
     }
 
     private int GetExplorationDurationForProgressionPhase(int progressionPhase)

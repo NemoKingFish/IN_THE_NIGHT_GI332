@@ -37636,6 +37636,7 @@ MonoBehaviour:
   anomalyID: 3
   anomalyName: Anomaly 2
   assignedAnomalyType: 2
+  assignedAnomalyTypes: 0200000001000000
   anomalyPhase: 2
   anomalyChance: 30
   movedLocalPositionOffset: {x: 3.51, y: 0, z: 0}
@@ -37659,6 +37660,7 @@ MonoBehaviour:
     maxDistance: 12
     loop: 1
   previewAnomalyInEditMode: 0
+  previewAssignedAnomalyTypeIndex: 0
 --- !u!65 &591263042
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -44218,8 +44220,20 @@ PrefabInstance:
     m_TransformParent: {fileID: 181903169}
     m_Modifications:
     - target: {fileID: 2142333963174309341, guid: fd9a0b6c96158cf4291ea793dcd09c5e, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.0007324399
+      objectReference: {fileID: 0}
+    - target: {fileID: 2142333963174309341, guid: fd9a0b6c96158cf4291ea793dcd09c5e, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1.3544543
+      objectReference: {fileID: 0}
+    - target: {fileID: 2142333963174309341, guid: fd9a0b6c96158cf4291ea793dcd09c5e, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.00816345
+      objectReference: {fileID: 0}
+    - target: {fileID: 2142333963174309341, guid: fd9a0b6c96158cf4291ea793dcd09c5e, type: 3}
       propertyPath: m_LocalRotation.w
-      value: -0.9945219
+      value: 0.63943905
       objectReference: {fileID: 0}
     - target: {fileID: 2142333963174309341, guid: fd9a0b6c96158cf4291ea793dcd09c5e, type: 3}
       propertyPath: m_LocalRotation.x
@@ -44227,11 +44241,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2142333963174309341, guid: fd9a0b6c96158cf4291ea793dcd09c5e, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.10452836
+      value: 0.7688418
       objectReference: {fileID: 0}
     - target: {fileID: 2142333963174309341, guid: fd9a0b6c96158cf4291ea793dcd09c5e, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2142333963174309341, guid: fd9a0b6c96158cf4291ea793dcd09c5e, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
@@ -44242,24 +44256,36 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3067518982685379600, guid: fd9a0b6c96158cf4291ea793dcd09c5e, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.005
+      objectReference: {fileID: 0}
+    - target: {fileID: 3067518982685379600, guid: fd9a0b6c96158cf4291ea793dcd09c5e, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.007999897
+      objectReference: {fileID: 0}
+    - target: {fileID: 3067518982685379600, guid: fd9a0b6c96158cf4291ea793dcd09c5e, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.044
+      objectReference: {fileID: 0}
+    - target: {fileID: 3067518982685379600, guid: fd9a0b6c96158cf4291ea793dcd09c5e, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.6394391
+      value: 0.9961847
       objectReference: {fileID: 0}
     - target: {fileID: 3067518982685379600, guid: fd9a0b6c96158cf4291ea793dcd09c5e, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 3067518982685379600, guid: fd9a0b6c96158cf4291ea793dcd09c5e, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.7688418
+      value: -0.08727032
       objectReference: {fileID: 0}
     - target: {fileID: 3067518982685379600, guid: fd9a0b6c96158cf4291ea793dcd09c5e, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 3067518982685379600, guid: fd9a0b6c96158cf4291ea793dcd09c5e, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 100.5
+      value: -10.013
       objectReference: {fileID: 0}
     - target: {fileID: 6276409764197313900, guid: fd9a0b6c96158cf4291ea793dcd09c5e, type: 3}
       propertyPath: m_LocalScale.x
@@ -44321,6 +44347,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: (Prb)SeparatorDoor
       objectReference: {fileID: 0}
+    - target: {fileID: 8594438205957587431, guid: fd9a0b6c96158cf4291ea793dcd09c5e, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 2537803991167266457, guid: fd9a0b6c96158cf4291ea793dcd09c5e, type: 3}
     m_RemovedGameObjects: []
@@ -44362,7 +44392,8 @@ MonoBehaviour:
   closedLocalEulerAngles: {x: 0, y: 100.49999, z: 0}
   openLocalPosition: {x: 0.0007324399, y: 1.3544543, z: 0.00816345}
   openLocalEulerAngles: {x: -1.3632644e-14, y: 208.73782, z: -2.337464e-15}
-  disableCollidersWhenOpen: 0
+  disableCollidersWhenOpen: 1
+  previewOpenInEditMode: 0
 --- !u!1 &689206305
 GameObject:
   m_ObjectHideFlags: 0
@@ -66581,6 +66612,7 @@ MonoBehaviour:
   anomalyID: 4
   anomalyName: Cylinder
   assignedAnomalyType: 6
+  assignedAnomalyTypes: 06000000
   anomalyPhase: 3
   anomalyChance: 30
   movedLocalPositionOffset: {x: 0, y: 0, z: 0}
@@ -66604,6 +66636,7 @@ MonoBehaviour:
     maxDistance: 12
     loop: 1
   previewAnomalyInEditMode: 0
+  previewAssignedAnomalyTypeIndex: 0
 --- !u!1 &972590356
 GameObject:
   m_ObjectHideFlags: 0
@@ -78041,6 +78074,7 @@ MonoBehaviour:
   anomalyID: 2
   anomalyName: Anomaly 3
   assignedAnomalyType: 1
+  assignedAnomalyTypes: 01000000
   anomalyPhase: 3
   anomalyChance: 30
   movedLocalPositionOffset: {x: 0, y: 0, z: 0}
@@ -78064,6 +78098,7 @@ MonoBehaviour:
     maxDistance: 12
     loop: 1
   previewAnomalyInEditMode: 0
+  previewAssignedAnomalyTypeIndex: 0
 --- !u!135 &1179912428
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -87989,6 +88024,7 @@ MonoBehaviour:
   anomalyID: 1
   anomalyName: Anomaly 1
   assignedAnomalyType: 1
+  assignedAnomalyTypes: 01000000
   anomalyPhase: 1
   anomalyChance: 30
   movedLocalPositionOffset: {x: 0, y: 0, z: 0}
@@ -88012,6 +88048,7 @@ MonoBehaviour:
     maxDistance: 12
     loop: 1
   previewAnomalyInEditMode: 0
+  previewAssignedAnomalyTypeIndex: 0
 --- !u!136 &1342882788
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -160351,6 +160388,7 @@ MonoBehaviour:
   openLocalPosition: {x: -74.63399, y: 12.3, z: 149.09996}
   openLocalEulerAngles: {x: 0, y: 0, z: 0}
   disableCollidersWhenOpen: 1
+  previewOpenInEditMode: 0
 --- !u!1001 &5290542483289492500
 PrefabInstance:
   m_ObjectHideFlags: 0

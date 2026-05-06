@@ -1,10 +1,10 @@
 using System.Text;
+using System.Collections.Generic;
 using ExitGames.Client.Photon;
 using Photon.Pun;
 using UnityEngine;
 using PhotonHashtable = ExitGames.Client.Photon.Hashtable;
 #if UNITY_EDITOR
-using System.Collections.Generic;
 using UnityEditor;
 #endif
 
@@ -34,11 +34,12 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
     [Header("Anomaly Info")]
     [SerializeField] private int anomalyID;
     [SerializeField] private string anomalyName;
-    [SerializeField] private AnomalyType assignedAnomalyType = AnomalyType.None;
+    [SerializeField, HideInInspector] private AnomalyType assignedAnomalyType = AnomalyType.None;
+    [SerializeField] private List<AnomalyType> assignedAnomalyTypes = new List<AnomalyType>();
     [SerializeField, Range(1, 3)] private int anomalyPhase = 1;
 
     [Header("Spawn Chance")]
-    [SerializeField, Range(0f, 100f)] private float anomalyChance = 30f;
+    [SerializeField, Range(0f, 50f)] private float anomalyChance = 30f;
 
     [Header("Moved Object")]
     [SerializeField] private Vector3 movedLocalPositionOffset = Vector3.zero;
@@ -56,6 +57,7 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
 
     [Header("Editor Preview")]
     [SerializeField] private bool previewAnomalyInEditMode;
+    [SerializeField, HideInInspector] private int previewAssignedAnomalyTypeIndex;
 
     public ObservableValue<int> currentAnomalyID = new ObservableValue<int>(-1);
     public ObservableValue<string> currentAnomalyName = new ObservableValue<string>("Normal");
@@ -130,6 +132,27 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
         ApplySpawnState(false, true);
     }
 
+    public void SpawnAnomaly()
+    {
+        SpawnAnomaly(3);
+    }
+
+    public void SpawnAnomaly(int activeProgressionPhase)
+    {
+        if (!CanWriteState())
+        {
+            return;
+        }
+
+        if (!CanSpawnAnomalyInProgressionPhase(activeProgressionPhase))
+        {
+            ApplySpawnState(false, true);
+            return;
+        }
+
+        ApplySpawnState(true, true);
+    }
+
     public void RollAndSpawn()
     {
         RollAndSpawn(3);
@@ -149,7 +172,7 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
         }
 
         var randomValue = Random.Range(0f, 100f);
-        var spawnAnomaly = randomValue < anomalyChance;
+        var spawnAnomaly = randomValue < Mathf.Clamp(anomalyChance, 0f, 50f);
         ApplySpawnState(spawnAnomaly, true);
     }
 
@@ -160,9 +183,10 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
 
     private void ApplySpawnState(bool asAnomaly, bool syncToRoom)
     {
-        var nextType = asAnomaly ? assignedAnomalyType : AnomalyType.None;
-        var nextId = asAnomaly ? anomalyID : -1;
-        var nextName = asAnomaly ? anomalyName : "Normal";
+        var nextType = asAnomaly ? PickRandomAssignedAnomalyType() : AnomalyType.None;
+        var hasValidAnomaly = asAnomaly && nextType != AnomalyType.None;
+        var nextId = hasValidAnomaly ? anomalyID : -1;
+        var nextName = hasValidAnomaly ? anomalyName : "Normal";
 
         ApplyLocalState(nextId, nextName, nextType);
 
@@ -732,6 +756,16 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
         return GetCurrentAnomalyType() != AnomalyType.None;
     }
 
+    public bool HasConfiguredAnomalyType()
+    {
+        return GetPrimaryAssignedAnomalyType() != AnomalyType.None;
+    }
+
+    public bool CanSpawnAnomalyInProgressionPhase(int activeProgressionPhase)
+    {
+        return HasConfiguredAnomalyType() && IsAvailableInProgressionPhase(activeProgressionPhase);
+    }
+
     public AnomalyType GetCurrentAnomalyType()
     {
         return (AnomalyType)currentAnomalyType.Value;
@@ -739,7 +773,12 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
 
     public AnomalyType GetAssignedAnomalyType()
     {
-        return assignedAnomalyType;
+        return GetPrimaryAssignedAnomalyType();
+    }
+
+    public IReadOnlyList<AnomalyType> GetAssignedAnomalyTypes()
+    {
+        return assignedAnomalyTypes;
     }
 
     public int GetAnomalyID()
@@ -754,7 +793,23 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
 
     public string GetAnomalyTypeName()
     {
-        return assignedAnomalyType.ToString();
+        var currentType = GetCurrentAnomalyType();
+        if (currentType != AnomalyType.None)
+        {
+            return currentType.ToString();
+        }
+
+        if (assignedAnomalyTypes == null || assignedAnomalyTypes.Count == 0)
+        {
+            return AnomalyType.None.ToString();
+        }
+
+        if (assignedAnomalyTypes.Count == 1)
+        {
+            return assignedAnomalyTypes[0].ToString();
+        }
+
+        return string.Join(", ", assignedAnomalyTypes);
     }
 
     public int GetAnomalyPhase()
@@ -842,6 +897,32 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
         SanitizeAudioSettings(anomalyAudioSettings);
     }
 
+    private void SyncAssignedAnomalyTypes()
+    {
+        if (assignedAnomalyTypes == null)
+        {
+            assignedAnomalyTypes = new List<AnomalyType>();
+        }
+
+        if (assignedAnomalyTypes.Count == 0 && assignedAnomalyType != AnomalyType.None)
+        {
+            assignedAnomalyTypes.Add(assignedAnomalyType);
+        }
+
+        var uniqueTypes = new HashSet<AnomalyType>();
+        for (var index = assignedAnomalyTypes.Count - 1; index >= 0; index--)
+        {
+            var anomalyType = assignedAnomalyTypes[index];
+            if (anomalyType == AnomalyType.None || !uniqueTypes.Add(anomalyType))
+            {
+                assignedAnomalyTypes.RemoveAt(index);
+            }
+        }
+
+        assignedAnomalyType = GetPrimaryAssignedAnomalyType();
+        previewAssignedAnomalyTypeIndex = Mathf.Clamp(previewAssignedAnomalyTypeIndex, 0, Mathf.Max(0, assignedAnomalyTypes.Count - 1));
+    }
+
     private static void SanitizeAudioSettings(SpatialAudioSettings settings)
     {
         if (settings == null)
@@ -852,6 +933,65 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
         settings.volume = Mathf.Clamp01(settings.volume);
         settings.minDistance = Mathf.Max(0f, settings.minDistance);
         settings.maxDistance = Mathf.Max(settings.minDistance + 0.01f, settings.maxDistance);
+    }
+
+    private AnomalyType GetPrimaryAssignedAnomalyType()
+    {
+        if (assignedAnomalyTypes != null)
+        {
+            for (var index = 0; index < assignedAnomalyTypes.Count; index++)
+            {
+                var anomalyType = assignedAnomalyTypes[index];
+                if (anomalyType != AnomalyType.None)
+                {
+                    return anomalyType;
+                }
+            }
+        }
+
+        return assignedAnomalyType != AnomalyType.None ? assignedAnomalyType : AnomalyType.None;
+    }
+
+    private AnomalyType PickRandomAssignedAnomalyType()
+    {
+        if (assignedAnomalyTypes == null || assignedAnomalyTypes.Count == 0)
+        {
+            return AnomalyType.None;
+        }
+
+        var nextIndex = Random.Range(0, assignedAnomalyTypes.Count);
+        return assignedAnomalyTypes[nextIndex];
+    }
+
+    private bool HasAssignedAnomalyType(AnomalyType anomalyType)
+    {
+        return assignedAnomalyTypes != null && assignedAnomalyTypes.Contains(anomalyType);
+    }
+
+    private AnomalyType GetPreviewAssignedAnomalyType()
+    {
+        if (assignedAnomalyTypes == null || assignedAnomalyTypes.Count == 0)
+        {
+            return AnomalyType.None;
+        }
+
+        var previewIndex = Mathf.Clamp(previewAssignedAnomalyTypeIndex, 0, assignedAnomalyTypes.Count - 1);
+        return assignedAnomalyTypes[previewIndex];
+    }
+
+    public int GetPreviewAssignedAnomalyTypeIndex()
+    {
+        return previewAssignedAnomalyTypeIndex;
+    }
+
+    public void SetPreviewAssignedAnomalyTypeIndex(int nextIndex)
+    {
+        previewAssignedAnomalyTypeIndex = Mathf.Clamp(nextIndex, 0, Mathf.Max(0, assignedAnomalyTypes.Count - 1));
+
+        if (!Application.isPlaying && previewAnomalyInEditMode)
+        {
+            RefreshEditorPreview();
+        }
     }
 
     private Vector3 GetAudioGizmoWorldPosition(AnomalyType previewType)
@@ -924,6 +1064,8 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
     {
         SyncEditorGeneratedFields();
         anomalyPhase = Mathf.Clamp(anomalyPhase, 1, 3);
+        anomalyChance = Mathf.Clamp(anomalyChance, 0f, 50f);
+        SyncAssignedAnomalyTypes();
         SanitizeAudioSettings();
 
         if (!previewAnomalyInEditMode && !suppressEditorOriginalTransformCapture)
@@ -955,9 +1097,10 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
 
         EnsureOriginalTransformSnapshot();
 
-        if (previewAnomalyInEditMode && assignedAnomalyType != AnomalyType.None)
+        var previewType = GetPreviewAssignedAnomalyType();
+        if (previewAnomalyInEditMode && previewType != AnomalyType.None)
         {
-            ApplyLocalState(anomalyID, anomalyName, assignedAnomalyType);
+            ApplyLocalState(anomalyID, anomalyName, previewType);
             return;
         }
 
@@ -1070,7 +1213,9 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
 
     private void OnDrawGizmosSelected()
     {
-        if (assignedAnomalyType == AnomalyType.MovedObject)
+        var previewType = GetPreviewAssignedAnomalyType();
+
+        if (previewType == AnomalyType.MovedObject)
         {
             var from = transform.position;
             var to = transform.position + (transform.rotation * movedLocalPositionOffset);
@@ -1085,7 +1230,7 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
         var anomalyAudioColor = new Color(1f, 0.4f, 0.15f, 0.8f);
 
         DrawAudioRangeGizmo(normalAudioSettings, AnomalyType.None, normalAudioColor);
-        DrawAudioRangeGizmo(anomalyAudioSettings, assignedAnomalyType, anomalyAudioColor);
+        DrawAudioRangeGizmo(anomalyAudioSettings, previewType, anomalyAudioColor);
     }
 #endif
 }
