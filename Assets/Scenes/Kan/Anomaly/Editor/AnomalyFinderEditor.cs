@@ -19,6 +19,11 @@ public class AnomalyFinderEditor : Editor
 
     private void OnEnable()
     {
+        if (target == null || targets == null || targets.Length == 0)
+        {
+            return;
+        }
+
         searchIdInputProperty = serializedObject.FindProperty("searchIdInput");
         searchNameInputProperty = serializedObject.FindProperty("searchNameInput");
         foundTypeProperty = serializedObject.FindProperty("foundType");
@@ -39,6 +44,18 @@ public class AnomalyFinderEditor : Editor
 
     public override void OnInspectorGUI()
     {
+        if (target == null || serializedObject == null)
+        {
+            EditorGUILayout.HelpBox("Selected finder object is no longer available.", MessageType.Info);
+            return;
+        }
+
+        if (searchIdInputProperty == null || searchNameInputProperty == null)
+        {
+            EditorGUILayout.HelpBox("Inspector data is not available for this anomaly finder.", MessageType.Warning);
+            return;
+        }
+
         serializedObject.Update();
         var finder = (AnomalyFinder)target;
 
