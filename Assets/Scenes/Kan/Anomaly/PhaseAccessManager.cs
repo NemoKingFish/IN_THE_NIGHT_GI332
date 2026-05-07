@@ -30,6 +30,7 @@ public class PhaseAccessManager : MonoBehaviour
         TrySubscribe();
         CacheCurrentPhaseState();
         RefreshDoors();
+        SyncProgressionMusic();
     }
 
     private void Update()
@@ -101,6 +102,7 @@ public class PhaseAccessManager : MonoBehaviour
     private void OnProgressionPhaseChanged(int oldValue, int newValue)
     {
         RefreshDoors();
+        SyncProgressionMusic();
     }
 
     private void OnGamePhaseChanged(int oldValue, int newValue)
@@ -197,5 +199,16 @@ public class PhaseAccessManager : MonoBehaviour
                 doors[i].SetOpen(shouldOpen);
             }
         }
+    }
+
+    private void SyncProgressionMusic()
+    {
+        if (gameRoundManager == null || SoundManager.Instance == null)
+        {
+            return;
+        }
+
+        var progressionPhase = Mathf.Clamp(gameRoundManager.GetCurrentProgressionPhase(), 1, 3);
+        SoundManager.Instance.PlayMusicTrackById($"phase{progressionPhase}");
     }
 }

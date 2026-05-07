@@ -17,7 +17,7 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
     [SerializeField] private float walkStepInterval = 0.46f;
     [SerializeField] private float sprintStepInterval = 0.31f;
     [SerializeField] private float footstepMinSpeed = 0.2f;
-    [Range(0f, 1f)] [SerializeField] private float footstepVolume = 0.65f;
+    [Range(0f, 1f)] [SerializeField] private float footstepVolume = 0.35f;
 
     [Header("Look")]
     [SerializeField] private float mouseSensitivity = 2.2f;

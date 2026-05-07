@@ -265,6 +265,20 @@ MonoBehaviour:
   scoreText: {fileID: 4102036051324961465}
   roundText: {fileID: 6943997823412593167}
   phaseText: {fileID: 8134024095256085364}
+  investigationWarningText: {fileID: 0}
+  investigationWarningThresholdSeconds: 11
+  investigationWarningMessage: "\u0E16\u0E49\u0E32\u0E44\u0E21\u0E48 submit \u0E23\u0E30\u0E1A\u0E1A\u0E08\u0E30\u0E43\u0E0A\u0E49
+    checklist \u0E1B\u0E31\u0E08\u0E08\u0E38\u0E1A\u0E31\u0E19\u0E17\u0E31\u0E19\u0E17\u0E35"
+  investigationWarningClip: {fileID: 8300000, guid: 83c449b4a5f85784899a490db30313c2, type: 3}
+  investigationWarningVolume: 0.7
+  phaseUnlockPanel: {fileID: 0}
+  phaseUnlockImage: {fileID: 0}
+  phaseUnlockText: {fileID: 0}
+  phaseUnlockSprite: {fileID: 0}
+  phaseUnlockClip: {fileID: 8300000, guid: a364654eafea9454892dd07dab35d437, type: 3}
+  phaseUnlockVolume: 0.68
+  phaseUnlockDisplayDuration: 3
+  phaseUnlockImageSize: {x: 180, y: 180}
 --- !u!114 &2169744681134477628
 MonoBehaviour:
   m_ObjectHideFlags: 0

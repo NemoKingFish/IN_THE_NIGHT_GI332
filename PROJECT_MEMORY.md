@@ -347,6 +347,7 @@ Current implementation hooks:
 - `PhaseAccessManager` phase-change audio
 - `AnomalySpawnPoint` normal/anomaly spatial audio
 - `FootstepReceiver`
+- `SoundManager` now owns BGM playback and crossfade transitions
 
 Smallest high-impact audio pass:
 
@@ -376,6 +377,9 @@ Recently implemented or confirmed:
 - Photon player prefab fallback improvements.
 - Player name labels face the camera correctly.
 - Jump removed from current player movement direction.
+- `SoundManager` merged the old `LoopBgmSfx` role and now handles multi-track BGM with crossfade.
+- `PhaseAccessManager` now asks `SoundManager` to switch music by progression phase (`phase1/phase2/phase3`).
+- Legacy `LoopBgmSfx` object in `Manager.prefab` is disabled to avoid duplicate BGM playback.
 
 ## Current Strengths
 

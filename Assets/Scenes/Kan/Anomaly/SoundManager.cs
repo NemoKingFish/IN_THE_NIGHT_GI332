@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -6,6 +7,14 @@ using UnityEngine.SceneManagement;
 [DefaultExecutionOrder(-400)]
 public class SoundManager : MonoBehaviour
 {
+    [System.Serializable]
+    public class BgmTrack
+    {
+        public string id;
+        public AudioClip clip;
+        [Range(0f, 1f)] public float volume = 1f;
+    }
+
     public enum MusicPlaybackMode
     {
         Sequential = 0,
@@ -23,7 +32,12 @@ public class SoundManager : MonoBehaviour
     [SerializeField] private bool loopPlaylist = true;
     [SerializeField] private MusicPlaybackMode musicPlaybackMode = MusicPlaybackMode.Sequential;
     [SerializeField] private AudioSource musicSource;
+    [SerializeField] private AudioSource secondaryMusicSource;
     [SerializeField] private List<AudioClip> musicTracks = new List<AudioClip>();
+    [SerializeField] private BgmTrack[] bgmTracks;
+    [SerializeField] private bool loadDefaultPhaseTracksIfEmpty = true;
+    [SerializeField] private int defaultTrackIndex;
+    [SerializeField] private float crossfadeDuration = 1.5f;
     [SerializeField] [Range(0f, 1f)] private float musicSourceBaseVolume = 1f;
 
     [Header("Volume Defaults")]
@@ -36,6 +50,10 @@ public class SoundManager : MonoBehaviour
     private readonly List<SoundCategoryEmitter> registeredEmitters = new List<SoundCategoryEmitter>();
     private int currentTrackIndex = -1;
     private bool hasStartedMusicPlayback;
+    private AudioSource activeMusicSource;
+    private Coroutine musicTransitionRoutine;
+    private float primaryTrackBlend;
+    private float secondaryTrackBlend;
 
     public static SoundManager Instance => instance;
 
@@ -58,7 +76,8 @@ public class SoundManager : MonoBehaviour
             DontDestroyOnLoad(gameObject);
         }
 
-        ResolveMusicSource();
+        ResolveMusicSources();
+        ResolveDefaultTracks();
         LoadSavedVolumes();
         ApplyVolumeState();
         SceneManager.sceneLoaded += OnSceneLoaded;
@@ -73,21 +92,6 @@ public class SoundManager : MonoBehaviour
         }
     }
 
-    private void Update()
-    {
-        if (musicSource == null || musicTracks.Count == 0 || !hasStartedMusicPlayback)
-        {
-            return;
-        }
-
-        if (musicSource.isPlaying)
-        {
-            return;
-        }
-
-        PlayNextTrack();
-    }
-
     private void OnDestroy()
     {
         if (instance == this)
@@ -100,6 +104,7 @@ public class SoundManager : MonoBehaviour
     private void OnValidate()
     {
         musicSourceBaseVolume = Mathf.Clamp01(musicSourceBaseVolume);
+        crossfadeDuration = Mathf.Max(0f, crossfadeDuration);
         defaultMasterVolume = Mathf.Clamp01(defaultMasterVolume);
         defaultMusicVolume = Mathf.Clamp01(defaultMusicVolume);
         defaultSfxVolume = Mathf.Clamp01(defaultSfxVolume);
@@ -176,33 +181,64 @@ public class SoundManager : MonoBehaviour
 
     public void TryStartMusicPlayback()
     {
-        ResolveMusicSource();
-        if (musicSource == null || musicTracks.Count == 0)
+        ResolveMusicSources();
+        ResolveDefaultTracks();
+        if (bgmTracks == null || bgmTracks.Length == 0)
         {
             return;
         }
 
         hasStartedMusicPlayback = true;
-        if (currentTrackIndex < 0 || currentTrackIndex >= musicTracks.Count || musicSource.clip == null)
+        var trackIndex = defaultTrackIndex;
+        if (trackIndex < 0 || trackIndex >= bgmTracks.Length)
         {
-            if (musicPlaybackMode == MusicPlaybackMode.Random)
-            {
-                PlayRandomTrack();
-                return;
-            }
-
-            currentTrackIndex = 0;
+            trackIndex = 0;
         }
 
-        PlayTrackAtIndex(currentTrackIndex);
+        if (musicPlaybackMode == MusicPlaybackMode.Random && bgmTracks.Length > 1)
+        {
+            trackIndex = Random.Range(0, bgmTracks.Length);
+        }
+
+        PlayMusicTrack(trackIndex, true);
     }
 
     public void StopMusic()
     {
+        StopMusic(0.8f);
+    }
+
+    public void StopMusic(float fadeDuration)
+    {
         hasStartedMusicPlayback = false;
-        if (musicSource != null)
+        if (musicTransitionRoutine != null)
         {
-            musicSource.Stop();
+            StopCoroutine(musicTransitionRoutine);
+        }
+
+        musicTransitionRoutine = StartCoroutine(FadeOutMusicRoutine(Mathf.Max(0f, fadeDuration)));
+    }
+
+    public void PlayMusicTrack(int index)
+    {
+        PlayMusicTrack(index, false);
+    }
+
+    public void PlayMusicTrackById(string trackId)
+    {
+        if (bgmTracks == null || string.IsNullOrWhiteSpace(trackId))
+        {
+            return;
+        }
+
+        for (var i = 0; i < bgmTracks.Length; i++)
+        {
+            var track = bgmTracks[i];
+            if (track != null && !string.IsNullOrWhiteSpace(track.id) && track.id == trackId)
+            {
+                PlayMusicTrack(i, false);
+                return;
+            }
         }
     }
 
@@ -219,36 +255,69 @@ public class SoundManager : MonoBehaviour
     private void OnSceneLoaded(Scene scene, LoadSceneMode loadSceneMode)
     {
         RefreshAllEmittersInScene();
-        ResolveMusicSource();
+        ResolveMusicSources();
+        ResolveDefaultTracks();
 
-        if (playMusicOnStart && hasStartedMusicPlayback && musicSource != null && !musicSource.isPlaying && musicTracks.Count > 0)
+        if (playMusicOnStart && hasStartedMusicPlayback && bgmTracks != null && bgmTracks.Length > 0)
         {
-            PlayTrackAtIndex(Mathf.Clamp(currentTrackIndex, 0, musicTracks.Count - 1));
+            var clampedIndex = Mathf.Clamp(currentTrackIndex >= 0 ? currentTrackIndex : defaultTrackIndex, 0, bgmTracks.Length - 1);
+            PlayMusicTrack(clampedIndex, true);
         }
     }
 
-    private void ResolveMusicSource()
+    private void ResolveMusicSources()
     {
         if (musicSource != null)
         {
             ConfigureMusicSource(musicSource);
-            return;
+        }
+        else
+        {
+            var childTransform = transform.Find("__SoundManagerMusic");
+            if (childTransform == null)
+            {
+                var musicObject = new GameObject("__SoundManagerMusic", typeof(AudioSource));
+                childTransform = musicObject.transform;
+                childTransform.SetParent(transform, false);
+            }
+
+            musicSource = childTransform.GetComponent<AudioSource>();
+            ConfigureMusicSource(musicSource);
         }
 
-        var childTransform = transform.Find("__SoundManagerMusic");
-        if (childTransform == null)
+        if (secondaryMusicSource != null)
         {
-            var musicObject = new GameObject("__SoundManagerMusic", typeof(AudioSource));
-            childTransform = musicObject.transform;
-            childTransform.SetParent(transform, false);
+            ConfigureMusicSource(secondaryMusicSource);
+        }
+        else
+        {
+            var childTransform = transform.Find("__SoundManagerMusicSecondary");
+            if (childTransform == null)
+            {
+                var musicObject = new GameObject("__SoundManagerMusicSecondary", typeof(AudioSource));
+                childTransform = musicObject.transform;
+                childTransform.SetParent(transform, false);
+            }
+
+            secondaryMusicSource = childTransform.GetComponent<AudioSource>();
+            ConfigureMusicSource(secondaryMusicSource);
         }
 
-        musicSource = childTransform.GetComponent<AudioSource>();
-        ConfigureMusicSource(musicSource);
-        var emitter = SoundCategoryEmitter.Ensure(musicSource, SoundCategory.Music);
-        if (emitter != null)
+        var primaryEmitter = SoundCategoryEmitter.Ensure(musicSource, SoundCategory.Music);
+        if (primaryEmitter != null)
         {
-            emitter.SetBaseVolume(musicSourceBaseVolume);
+            primaryEmitter.SetBaseVolume(musicSourceBaseVolume);
+        }
+
+        var secondaryEmitter = SoundCategoryEmitter.Ensure(secondaryMusicSource, SoundCategory.Music);
+        if (secondaryEmitter != null)
+        {
+            secondaryEmitter.SetBaseVolume(musicSourceBaseVolume);
+        }
+
+        if (activeMusicSource == null)
+        {
+            activeMusicSource = musicSource;
         }
     }
 
@@ -260,9 +329,9 @@ public class SoundManager : MonoBehaviour
         }
 
         source.playOnAwake = false;
-        source.loop = false;
+        source.loop = true;
         source.spatialBlend = 0f;
-        source.volume = Mathf.Clamp01(musicSourceBaseVolume);
+        source.volume = 0f;
     }
 
     private void LoadSavedVolumes()
@@ -276,11 +345,7 @@ public class SoundManager : MonoBehaviour
     private void ApplyVolumeState()
     {
         AudioListener.volume = Mathf.Clamp01(MasterVolume);
-
-        if (musicSource != null)
-        {
-            musicSource.volume = Mathf.Clamp01(musicSourceBaseVolume * MusicVolume);
-        }
+        ApplyMusicSourceVolumes();
 
         for (var i = registeredEmitters.Count - 1; i >= 0; i--)
         {
@@ -314,69 +379,200 @@ public class SoundManager : MonoBehaviour
         }
     }
 
-    private void PlayNextTrack()
+    private void PlayMusicTrack(int index, bool instant)
     {
-        if (musicTracks.Count == 0)
+        ResolveMusicSources();
+        ResolveDefaultTracks();
+        if (bgmTracks == null || bgmTracks.Length == 0)
         {
             return;
         }
 
-        if (musicPlaybackMode == MusicPlaybackMode.Random)
+        index = Mathf.Clamp(index, 0, bgmTracks.Length - 1);
+        var track = bgmTracks[index];
+        if (track == null || track.clip == null)
         {
-            PlayRandomTrack();
             return;
         }
 
-        var nextIndex = currentTrackIndex + 1;
-        if (nextIndex >= musicTracks.Count)
+        hasStartedMusicPlayback = true;
+        if (currentTrackIndex == index && activeMusicSource != null && activeMusicSource.isPlaying)
         {
-            if (!loopPlaylist)
+            return;
+        }
+
+        if (musicTransitionRoutine != null)
+        {
+            StopCoroutine(musicTransitionRoutine);
+        }
+
+        var nextSource = activeMusicSource == musicSource ? secondaryMusicSource : musicSource;
+        if (nextSource == null)
+        {
+            return;
+        }
+
+        nextSource.clip = track.clip;
+        nextSource.Play();
+
+        if (instant || activeMusicSource == null || !activeMusicSource.isPlaying)
+        {
+            if (activeMusicSource != null && activeMusicSource != nextSource)
             {
-                hasStartedMusicPlayback = false;
-                return;
+                activeMusicSource.Stop();
+                SetSourceBlend(activeMusicSource, 0f);
             }
 
-            nextIndex = 0;
-        }
-
-        PlayTrackAtIndex(nextIndex);
-    }
-
-    private void PlayRandomTrack()
-    {
-        if (musicTracks.Count == 0)
-        {
-            return;
-        }
-
-        var nextIndex = musicTracks.Count == 1 ? 0 : Random.Range(0, musicTracks.Count);
-        if (musicTracks.Count > 1 && nextIndex == currentTrackIndex)
-        {
-            nextIndex = (nextIndex + 1) % musicTracks.Count;
-        }
-
-        PlayTrackAtIndex(nextIndex);
-    }
-
-    private void PlayTrackAtIndex(int index)
-    {
-        if (musicSource == null || musicTracks.Count == 0)
-        {
-            return;
-        }
-
-        index = Mathf.Clamp(index, 0, musicTracks.Count - 1);
-        var nextTrack = musicTracks[index];
-        if (nextTrack == null)
-        {
+            activeMusicSource = nextSource;
             currentTrackIndex = index;
-            PlayNextTrack();
+            SetSourceBlend(nextSource, Mathf.Clamp01(track.volume));
             return;
         }
 
+        var previousSource = activeMusicSource;
+        SetSourceBlend(nextSource, 0f);
+        activeMusicSource = nextSource;
         currentTrackIndex = index;
-        musicSource.clip = nextTrack;
-        musicSource.volume = Mathf.Clamp01(musicSourceBaseVolume * MusicVolume);
-        musicSource.Play();
+        musicTransitionRoutine = StartCoroutine(CrossfadeMusicRoutine(previousSource, nextSource, Mathf.Max(0.05f, crossfadeDuration), Mathf.Clamp01(track.volume)));
+    }
+
+    private IEnumerator CrossfadeMusicRoutine(AudioSource fromSource, AudioSource toSource, float duration, float targetBlend)
+    {
+        var startBlend = GetSourceBlend(fromSource);
+        var elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            var t = Mathf.Clamp01(elapsed / duration);
+            SetSourceBlend(fromSource, Mathf.Lerp(startBlend, 0f, t));
+            SetSourceBlend(toSource, Mathf.Lerp(0f, targetBlend, t));
+            yield return null;
+        }
+
+        SetSourceBlend(fromSource, 0f);
+        if (fromSource != null)
+        {
+            fromSource.Stop();
+        }
+
+        SetSourceBlend(toSource, targetBlend);
+        musicTransitionRoutine = null;
+    }
+
+    private IEnumerator FadeOutMusicRoutine(float duration)
+    {
+        if (activeMusicSource == null || !activeMusicSource.isPlaying)
+        {
+            yield break;
+        }
+
+        var source = activeMusicSource;
+        var startBlend = GetSourceBlend(source);
+        var elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            SetSourceBlend(source, Mathf.Lerp(startBlend, 0f, Mathf.Clamp01(elapsed / duration)));
+            yield return null;
+        }
+
+        SetSourceBlend(source, 0f);
+        source.Stop();
+        currentTrackIndex = -1;
+        musicTransitionRoutine = null;
+    }
+
+    private void ResolveDefaultTracks()
+    {
+        if (bgmTracks != null && bgmTracks.Length > 0)
+        {
+            return;
+        }
+
+        if (musicTracks != null && musicTracks.Count > 0)
+        {
+            bgmTracks = new BgmTrack[musicTracks.Count];
+            for (var i = 0; i < musicTracks.Count; i++)
+            {
+                bgmTracks[i] = new BgmTrack
+                {
+                    id = $"phase{i + 1}",
+                    clip = musicTracks[i],
+                    volume = 1f
+                };
+            }
+
+            return;
+        }
+
+        if (!loadDefaultPhaseTracksIfEmpty)
+        {
+            return;
+        }
+
+        var phase1 = Resources.Load<AudioClip>("Audio/Bgm/BGM_Phase1");
+        var phase2 = Resources.Load<AudioClip>("Audio/Bgm/BGM_Phase2");
+        var phase3 = Resources.Load<AudioClip>("Audio/Bgm/BGM_Phase3");
+
+        bgmTracks = new[]
+        {
+            new BgmTrack { id = "phase1", clip = phase1, volume = 0.85f },
+            new BgmTrack { id = "phase2", clip = phase2, volume = 0.85f },
+            new BgmTrack { id = "phase3", clip = phase3, volume = 0.9f }
+        };
+    }
+
+    private void ApplyMusicSourceVolumes()
+    {
+        if (musicSource != null)
+        {
+            musicSource.volume = Mathf.Clamp01(primaryTrackBlend * musicSourceBaseVolume * MusicVolume);
+        }
+
+        if (secondaryMusicSource != null)
+        {
+            secondaryMusicSource.volume = Mathf.Clamp01(secondaryTrackBlend * musicSourceBaseVolume * MusicVolume);
+        }
+    }
+
+    private float GetSourceBlend(AudioSource source)
+    {
+        if (source == null)
+        {
+            return 0f;
+        }
+
+        if (source == musicSource)
+        {
+            return primaryTrackBlend;
+        }
+
+        if (source == secondaryMusicSource)
+        {
+            return secondaryTrackBlend;
+        }
+
+        return 0f;
+    }
+
+    private void SetSourceBlend(AudioSource source, float blend)
+    {
+        if (source == null)
+        {
+            return;
+        }
+
+        if (source == musicSource)
+        {
+            primaryTrackBlend = Mathf.Clamp01(blend);
+        }
+        else if (source == secondaryMusicSource)
+        {
+            secondaryTrackBlend = Mathf.Clamp01(blend);
+        }
+
+        ApplyMusicSourceVolumes();
     }
 }
