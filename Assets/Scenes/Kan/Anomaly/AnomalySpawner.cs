@@ -990,7 +990,9 @@ public class AnomalySpawnPoint : MonoBehaviourPunCallbacks
 
         if (!Application.isPlaying && previewAnomalyInEditMode)
         {
+#if UNITY_EDITOR
             RefreshEditorPreview();
+#endif
         }
     }
 

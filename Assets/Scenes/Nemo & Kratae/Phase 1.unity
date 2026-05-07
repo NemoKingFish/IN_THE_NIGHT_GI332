@@ -151016,11 +151016,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 626606484561797045, guid: d4e34bc47ee24df4684efad121751ffb, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -32.345016
+      value: -44.015015
       objectReference: {fileID: 0}
     - target: {fileID: 626606484561797045, guid: d4e34bc47ee24df4684efad121751ffb, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -5.9547048
+      value: -6.644705
       objectReference: {fileID: 0}
     - target: {fileID: 1586220256343144053, guid: d4e34bc47ee24df4684efad121751ffb, type: 3}
       propertyPath: anomalyID
