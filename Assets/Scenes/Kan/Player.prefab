@@ -256,9 +256,6 @@ PrefabInstance:
       addedObject: {fileID: 2748732395656851149}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: f917c8c60b804da49a6fdcf0f2cc7697, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1845971818812620030}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: f917c8c60b804da49a6fdcf0f2cc7697, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 3472758899058355548}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: f917c8c60b804da49a6fdcf0f2cc7697, type: 3}
       insertIndex: -1
@@ -450,46 +447,6 @@ MonoBehaviour:
   m_DefaultActionMap: Player
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
---- !u!114 &1845971818812620030
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1673144038355186547}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e8d0727d5ae3244e3b569694d3912374, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
-  NetworkAnimatorExpanded: 0
-  AuthorityMode: 1
-  m_Animator: {fileID: 5373867322034664371}
-  TransitionStateInfoList: []
-  AnimatorParameterEntries:
-    ParameterEntries:
-    - name: Speed
-      NameHash: -823668238
-      Synchronize: 1
-      ParameterType: 1
-    - name: Jump
-      NameHash: 125937960
-      Synchronize: 1
-      ParameterType: 4
-    - name: Grounded
-      NameHash: 862969536
-      Synchronize: 1
-      ParameterType: 4
-    - name: FreeFall
-      NameHash: -2098586373
-      Synchronize: 1
-      ParameterType: 4
-    - name: MotionSpeed
-      NameHash: 1939466105
-      Synchronize: 1
-      ParameterType: 1
-  AnimatorParametersExpanded: 0
 --- !u!114 &3472758899058355548
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -711,46 +668,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 87bfacc8240197c4c9de510cd3fea0f7, type: 3}
   m_PrefabInstance: {fileID: 6416819392290515138}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &5629790872906054474
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6182447147500000659}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e8d0727d5ae3244e3b569694d3912374, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.Components.NetworkAnimator
-  ShowTopMostFoldoutHeaderGroup: 1
-  NetworkAnimatorExpanded: 0
-  AuthorityMode: 0
-  m_Animator: {fileID: 605605046026032467}
-  TransitionStateInfoList: []
-  AnimatorParameterEntries:
-    ParameterEntries:
-    - name: Speed
-      NameHash: -823668238
-      Synchronize: 1
-      ParameterType: 1
-    - name: Jump
-      NameHash: 125937960
-      Synchronize: 1
-      ParameterType: 4
-    - name: Grounded
-      NameHash: 862969536
-      Synchronize: 1
-      ParameterType: 4
-    - name: FreeFall
-      NameHash: -2098586373
-      Synchronize: 1
-      ParameterType: 4
-    - name: MotionSpeed
-      NameHash: 1939466105
-      Synchronize: 1
-      ParameterType: 1
-  AnimatorParametersExpanded: 0
 --- !u!4 &6811595756033347369 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 87bfacc8240197c4c9de510cd3fea0f7, type: 3}

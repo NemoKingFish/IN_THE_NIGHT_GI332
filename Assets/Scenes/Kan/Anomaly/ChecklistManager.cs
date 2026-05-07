@@ -116,6 +116,7 @@ public class ChecklistManager : MonoBehaviourPunCallbacks, IOnEventCallback
     {
         var scenePoints = FindObjectsByType<AnomalySpawnPoint>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         var filteredPoints = new List<AnomalySpawnPoint>();
+        var targetScene = gameObject != null ? gameObject.scene : default;
 
         for (var i = 0; i < scenePoints.Length; i++)
         {
@@ -125,7 +126,18 @@ public class ChecklistManager : MonoBehaviourPunCallbacks, IOnEventCallback
                 continue;
             }
 
-            if (point.gameObject.scene != gameObject.scene)
+            var pointGameObject = point.gameObject;
+            if (pointGameObject == null)
+            {
+                continue;
+            }
+
+            if (!pointGameObject.scene.IsValid() || !targetScene.IsValid())
+            {
+                continue;
+            }
+
+            if (pointGameObject.scene != targetScene)
             {
                 continue;
             }

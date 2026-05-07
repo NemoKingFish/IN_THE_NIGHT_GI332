@@ -214,6 +214,7 @@ public class SoundManager : MonoBehaviour
         if (musicTransitionRoutine != null)
         {
             StopCoroutine(musicTransitionRoutine);
+            musicTransitionRoutine = null;
         }
 
         musicTransitionRoutine = StartCoroutine(FadeOutMusicRoutine(Mathf.Max(0f, fadeDuration)));
@@ -396,14 +397,18 @@ public class SoundManager : MonoBehaviour
         }
 
         hasStartedMusicPlayback = true;
-        if (currentTrackIndex == index && activeMusicSource != null && activeMusicSource.isPlaying)
+        if (IsTrackAlreadyPlaying(track.clip))
         {
+            currentTrackIndex = index;
+            NormalizePlayingTrack(track.clip, Mathf.Clamp01(track.volume));
             return;
         }
 
         if (musicTransitionRoutine != null)
         {
             StopCoroutine(musicTransitionRoutine);
+            musicTransitionRoutine = null;
+            NormalizeCurrentPlaybackState();
         }
 
         var nextSource = activeMusicSource == musicSource ? secondaryMusicSource : musicSource;
@@ -417,11 +422,8 @@ public class SoundManager : MonoBehaviour
 
         if (instant || activeMusicSource == null || !activeMusicSource.isPlaying)
         {
-            if (activeMusicSource != null && activeMusicSource != nextSource)
-            {
-                activeMusicSource.Stop();
-                SetSourceBlend(activeMusicSource, 0f);
-            }
+            StopAndResetSource(activeMusicSource != nextSource ? activeMusicSource : null);
+            StopAndResetSource(nextSource == musicSource ? secondaryMusicSource : musicSource);
 
             activeMusicSource = nextSource;
             currentTrackIndex = index;
@@ -482,6 +484,72 @@ public class SoundManager : MonoBehaviour
         source.Stop();
         currentTrackIndex = -1;
         musicTransitionRoutine = null;
+    }
+
+    private bool IsTrackAlreadyPlaying(AudioClip clip)
+    {
+        if (clip == null)
+        {
+            return false;
+        }
+
+        return IsSourcePlayingClip(musicSource, clip) || IsSourcePlayingClip(secondaryMusicSource, clip);
+    }
+
+    private bool IsSourcePlayingClip(AudioSource source, AudioClip clip)
+    {
+        return source != null
+            && source.isPlaying
+            && source.clip == clip
+            && GetSourceBlend(source) > 0.001f;
+    }
+
+    private void NormalizePlayingTrack(AudioClip clip, float targetBlend)
+    {
+        if (clip == null)
+        {
+            return;
+        }
+
+        var preferredSource = IsSourcePlayingClip(activeMusicSource, clip)
+            ? activeMusicSource
+            : (IsSourcePlayingClip(musicSource, clip) ? musicSource : secondaryMusicSource);
+
+        if (preferredSource == null)
+        {
+            return;
+        }
+
+        var otherSource = preferredSource == musicSource ? secondaryMusicSource : musicSource;
+        StopAndResetSource(otherSource);
+        activeMusicSource = preferredSource;
+        SetSourceBlend(preferredSource, targetBlend);
+    }
+
+    private void NormalizeCurrentPlaybackState()
+    {
+        var primaryBlend = GetSourceBlend(musicSource);
+        var secondaryBlend = GetSourceBlend(secondaryMusicSource);
+        var dominantSource = primaryBlend >= secondaryBlend ? musicSource : secondaryMusicSource;
+        var secondarySource = dominantSource == musicSource ? secondaryMusicSource : musicSource;
+
+        if (dominantSource != null && dominantSource.isPlaying)
+        {
+            activeMusicSource = dominantSource;
+        }
+
+        StopAndResetSource(secondarySource);
+    }
+
+    private void StopAndResetSource(AudioSource source)
+    {
+        if (source == null)
+        {
+            return;
+        }
+
+        SetSourceBlend(source, 0f);
+        source.Stop();
     }
 
     private void ResolveDefaultTracks()

@@ -15,6 +15,7 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
     private const string PhaseKey = "Game_Phase";
     private const string ProgressionPhaseKey = "Game_ProgressionPhase";
     private const string PhaseEndTimeKey = "Game_PhaseEndTime";
+    private const string MemorizeAccessOpenKey = "Game_MemorizeAccessOpen";
     private const string RoundOutcomeKey = "Game_RoundOutcome";
     private const string PlayerSubmittedKey = "PlayerSubmitted";
     private const byte SubmitChecklistEventCode = 42;
@@ -75,6 +76,7 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
     public ObservableValue<int> gamePhase = new ObservableValue<int>((int)GamePhase.Memorize);
     public ObservableValue<int> currentProgressionPhase = new ObservableValue<int>(1);
     public ObservableValue<double> currentPhaseEndTime = new ObservableValue<double>(0d);
+    public ObservableValue<int> memorizeAccessOpen = new ObservableValue<int>(0);
 
     private Coroutine phaseRoutine;
     private RoundOutcome lastRoundOutcome = RoundOutcome.None;
@@ -179,14 +181,33 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
 
     public void AdvanceMemorizePhase()
     {
-        if (!CanWriteState() || gamePhase.Value != (int)GamePhase.Memorize)
+        if (!CanWriteState() || gamePhase.Value != (int)GamePhase.Memorize || !IsRememberStarted())
         {
             return;
         }
 
         StopPhaseRoutine();
+        TeleportLocalPlayerToAssignedSpawnPad();
         SetPhaseState(GamePhase.SpawnLockdown, GetCurrentTime() + spawnLockdownDuration);
         phaseRoutine = StartCoroutine(SpawnLockdownRoutine());
+    }
+
+    public void StartRememberPhase()
+    {
+        if (!CanWriteState() || gamePhase.Value != (int)GamePhase.Memorize || IsRememberStarted())
+        {
+            return;
+        }
+
+        SetMemorizeAccessOpen(true);
+
+        var phaseEndTime = useMemorizeTimer && memorizeDuration > 0f
+            ? GetCurrentTime() + memorizeDuration
+            : 0d;
+
+        currentPhaseEndTime.Value = phaseEndTime;
+        PushRoomState(PhaseEndTimeKey, phaseEndTime);
+        ScheduleMemorizeAdvanceIfNeeded();
     }
 
     public void SubmitChecklistServerRpc()
@@ -256,6 +277,11 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
     public bool IsMemorizePhase()
     {
         return gamePhase.Value == (int)GamePhase.Memorize;
+    }
+
+    public bool IsRememberStarted()
+    {
+        return memorizeAccessOpen.Value != 0;
     }
 
     public bool IsSpawnLockdownPhase()
@@ -426,22 +452,19 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
         SetCurrentRound(clampedRound);
         SetProgressionPhase(GetProgressionPhaseForRound(clampedRound));
         SetLastRoundOutcome(RoundOutcome.None);
+        SetMemorizeAccessOpen(false);
         SetAllSpawnPointsToNormal();
         ResetChecklistOnly();
-
-        var phaseEndTime = useMemorizeTimer && memorizeDuration > 0f
-            ? GetCurrentTime() + memorizeDuration
-            : 0d;
-
-        SetPhaseState(GamePhase.Memorize, phaseEndTime);
-        ScheduleMemorizeAdvanceIfNeeded();
+        SetPhaseState(GamePhase.Memorize, 0d);
+        TeleportLocalPlayerToAssignedSpawnPad();
+        StopPhaseRoutine();
     }
 
     private void ScheduleMemorizeAdvanceIfNeeded()
     {
         StopPhaseRoutine();
 
-        if (gamePhase.Value != (int)GamePhase.Memorize || !CanWriteState())
+        if (gamePhase.Value != (int)GamePhase.Memorize || !CanWriteState() || !IsRememberStarted())
         {
             return;
         }
@@ -705,6 +728,11 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
             updates[PhaseEndTimeKey] = 0d;
         }
 
+        if (!PhotonNetwork.CurrentRoom.CustomProperties.ContainsKey(MemorizeAccessOpenKey))
+        {
+            updates[MemorizeAccessOpenKey] = 0;
+        }
+
         if (!PhotonNetwork.CurrentRoom.CustomProperties.ContainsKey(RoundOutcomeKey))
         {
             updates[RoundOutcomeKey] = (int)RoundOutcome.None;
@@ -749,6 +777,11 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
         if (properties.ContainsKey(PhaseEndTimeKey))
         {
             currentPhaseEndTime.Value = ReadDouble(properties, PhaseEndTimeKey, 0d);
+        }
+
+        if (properties.ContainsKey(MemorizeAccessOpenKey))
+        {
+            memorizeAccessOpen.Value = ReadInt(properties, MemorizeAccessOpenKey, 0);
         }
 
         if (properties.ContainsKey(RoundOutcomeKey))
@@ -799,6 +832,12 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
         PushRoomState(ProgressionPhaseKey, currentProgressionPhase.Value);
     }
 
+    private void SetMemorizeAccessOpen(bool isOpen)
+    {
+        memorizeAccessOpen.Value = isOpen ? 1 : 0;
+        PushRoomState(MemorizeAccessOpenKey, memorizeAccessOpen.Value);
+    }
+
     private void SetLastRoundOutcome(RoundOutcome outcome)
     {
         lastRoundOutcome = outcome;
@@ -822,7 +861,29 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
         });
     }
 
+    private static void TeleportLocalPlayerToAssignedSpawnPad()
+    {
+        var spawnManager = FindFirstObjectByType<PhotonScenePlayerSpawnManager>();
+        if (spawnManager != null)
+        {
+            spawnManager.TeleportLocalPlayerToAssignedSpawnPad();
+        }
+    }
+
     private void PushRoomState(string key, int value)
+    {
+        if (!PhotonNetwork.InRoom)
+        {
+            return;
+        }
+
+        PhotonNetwork.CurrentRoom.SetCustomProperties(new PhotonHashtable
+        {
+            { key, value }
+        });
+    }
+
+    private void PushRoomState(string key, double value)
     {
         if (!PhotonNetwork.InRoom)
         {

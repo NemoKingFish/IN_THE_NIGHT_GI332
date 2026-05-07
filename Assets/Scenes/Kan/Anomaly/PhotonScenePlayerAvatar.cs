@@ -6,7 +6,7 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
 {
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 4.5f;
-    [SerializeField] private float sprintSpeed = 7f;
+    [SerializeField] private float sprintSpeed = 8.05f;
     [SerializeField] private float gravity = -18f;
     [SerializeField] private float remoteSmoothing = 12f;
 
@@ -18,6 +18,7 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
     [SerializeField] private float sprintStepInterval = 0.31f;
     [SerializeField] private float footstepMinSpeed = 0.2f;
     [Range(0f, 1f)] [SerializeField] private float footstepVolume = 0.35f;
+    [Range(0f, 1f)] [SerializeField] private float sprintFootstepVolumeMultiplier = 0.75f;
 
     [Header("Look")]
     [SerializeField] private float mouseSensitivity = 2.2f;
@@ -99,8 +100,8 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
             remoteVisualRoot = FindChildRecursive(transform, "Dummy");
         }
 
-        localRenderers = localVisualRoot != null ? localVisualRoot.GetComponentsInChildren<Renderer>(true) : System.Array.Empty<Renderer>();
-        remoteRenderers = remoteVisualRoot != null ? remoteVisualRoot.GetComponentsInChildren<Renderer>(true) : System.Array.Empty<Renderer>();
+        localRenderers = GetExclusiveRenderers(localVisualRoot, remoteVisualRoot);
+        remoteRenderers = GetExclusiveRenderers(remoteVisualRoot, localVisualRoot);
 
         remoteTargetPosition = transform.position;
         remoteTargetRotation = transform.rotation;
@@ -353,7 +354,8 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
         }
 
         footstepAudioSource.pitch = isSprinting ? 1.08f : 1f;
-        footstepAudioSource.PlayOneShot(clip, Mathf.Clamp01(footstepVolume));
+        var stepVolume = footstepVolume * (isSprinting ? sprintFootstepVolumeMultiplier : 1f);
+        footstepAudioSource.PlayOneShot(clip, Mathf.Clamp01(stepVolume));
     }
 
     private bool IsGrounded()
@@ -661,6 +663,40 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
             candidate.enabled = true;
             candidate.applyRootMotion = false;
         }
+    }
+
+    private static Renderer[] GetExclusiveRenderers(Transform includeRoot, Transform excludeRoot)
+    {
+        if (includeRoot == null)
+        {
+            return System.Array.Empty<Renderer>();
+        }
+
+        var group = includeRoot.GetComponentsInChildren<Renderer>(true);
+        if (group == null || group.Length == 0 || excludeRoot == null)
+        {
+            return group ?? System.Array.Empty<Renderer>();
+        }
+
+        var filtered = new System.Collections.Generic.List<Renderer>(group.Length);
+        for (var i = 0; i < group.Length; i++)
+        {
+            var renderer = group[i];
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            var rendererTransform = renderer.transform;
+            if (rendererTransform == excludeRoot || rendererTransform.IsChildOf(excludeRoot))
+            {
+                continue;
+            }
+
+            filtered.Add(renderer);
+        }
+
+        return filtered.ToArray();
     }
 
     private static Transform FindChildRecursive(Transform parent, string targetName)

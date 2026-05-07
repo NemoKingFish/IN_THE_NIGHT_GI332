@@ -1,4 +1,4 @@
-using TMPro;
+﻿using TMPro;
 using Photon.Pun;
 using UnityEngine;
 using UnityEngine.UI;
@@ -6,6 +6,7 @@ using UnityEngine.UI;
 public class GameStatusUI : MonoBehaviour
 {
     private const string PasswordCodeKey = "PasswordCode";
+    private static Sprite generatedPhaseUnlockFallbackSprite;
 
     [SerializeField] private GameRoundManager gameRoundManager;
     [SerializeField] private TextMeshProUGUI roomPasswordText;
@@ -15,7 +16,7 @@ public class GameStatusUI : MonoBehaviour
     [Header("Investigation Warning")]
     [SerializeField] private TextMeshProUGUI investigationWarningText;
     [SerializeField] private float investigationWarningThresholdSeconds = 15f;
-    [SerializeField] private string investigationWarningMessage = "ถ้าไม่ submit ระบบจะใช้ checklist ปัจจุบันทันที";
+    [SerializeField] private string investigationWarningMessage = "If you do not submit, the current checklist will be used automatically.";
     [SerializeField] private AudioClip investigationWarningClip;
     [Range(0f, 1f)] [SerializeField] private float investigationWarningVolume = 1f;
     [Header("Phase Unlock Popup")]
@@ -149,10 +150,16 @@ public class GameStatusUI : MonoBehaviour
             phaseUnlockSprite = Resources.Load<Sprite>("UI/phase_unlock_padlock");
         }
 
+        if (phaseUnlockSprite == null)
+        {
+            phaseUnlockSprite = GetOrCreateFallbackPhaseUnlockSprite();
+        }
+
         if (phaseUnlockImage != null && phaseUnlockSprite != null)
         {
             phaseUnlockImage.sprite = phaseUnlockSprite;
             phaseUnlockImage.preserveAspect = true;
+            phaseUnlockImage.color = new Color(1f, 0.84f, 0.28f, 1f);
         }
 
         if (uiAudioSource == null)
@@ -238,9 +245,16 @@ public class GameStatusUI : MonoBehaviour
             switch (phase)
             {
                 case GameRoundManager.GamePhase.Memorize:
-                    phaseText.text = gameRoundManager.HasMemorizeTimer()
-                        ? $"Phase: Memorize ({gameRoundManager.GetMemorizeSecondsRemaining()})"
-                        : "Phase: Memorize";
+                    if (!gameRoundManager.IsRememberStarted())
+                    {
+                        phaseText.text = "Phase: Waiting To Start Remember";
+                    }
+                    else
+                    {
+                        phaseText.text = gameRoundManager.HasMemorizeTimer()
+                            ? $"Phase: Memorize ({gameRoundManager.GetMemorizeSecondsRemaining()})"
+                            : "Phase: Memorize";
+                    }
                     break;
                 case GameRoundManager.GamePhase.SpawnLockdown:
                     phaseText.text = "Phase: Spawn Lockdown";
@@ -407,7 +421,7 @@ public class GameStatusUI : MonoBehaviour
         }
 
         var secondsRemaining = gameRoundManager.GetInvestigationSecondsRemaining();
-        investigationWarningText.text = $"เหลือ {secondsRemaining} วิ\n{investigationWarningMessage}";
+        investigationWarningText.text = $"{secondsRemaining} seconds left\n{investigationWarningMessage}";
         if (!investigationWarningText.gameObject.activeSelf)
         {
             investigationWarningText.gameObject.SetActive(true);
@@ -463,6 +477,7 @@ public class GameStatusUI : MonoBehaviour
         phaseUnlockImage = iconObject.GetComponent<Image>();
         phaseUnlockImage.raycastTarget = false;
         phaseUnlockImage.preserveAspect = true;
+        phaseUnlockImage.color = new Color(1f, 0.84f, 0.28f, 1f);
         var iconRect = phaseUnlockImage.rectTransform;
         iconRect.anchorMin = new Vector2(0.5f, 0.5f);
         iconRect.anchorMax = new Vector2(0.5f, 0.5f);
@@ -553,10 +568,95 @@ public class GameStatusUI : MonoBehaviour
     {
         return progressionPhase switch
         {
-            2 => "มีโซนใหม่ปลดล็อก\nโซนฝั่งซ้ายเปิดแล้ว",
-            3 => "มีโซนใหม่ปลดล็อก\nโซนฝั่งขวาเปิดแล้ว",
-            _ => "มีโซนใหม่ปลดล็อก"
+            2 => "New zone unlocked\nLeft zone is now open",
+            3 => "New zone unlocked\nRight zone is now open",
+            _ => "New zone unlocked"
         };
+    }
+
+    private static Sprite GetOrCreateFallbackPhaseUnlockSprite()
+    {
+        if (generatedPhaseUnlockFallbackSprite != null)
+        {
+            return generatedPhaseUnlockFallbackSprite;
+        }
+
+        const int size = 128;
+        var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        texture.name = "GeneratedPhaseUnlockPadlock";
+        texture.filterMode = FilterMode.Bilinear;
+        texture.wrapMode = TextureWrapMode.Clamp;
+
+        var clear = new Color32(0, 0, 0, 0);
+        var fill = new Color32(255, 214, 71, 255);
+        var detail = new Color32(112, 70, 16, 255);
+        var pixels = new Color32[size * size];
+
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            pixels[i] = clear;
+        }
+
+        FillRect(pixels, size, 30, 22, 68, 64, fill);
+        FillRect(pixels, size, 52, 36, 16, 24, detail);
+        DrawRing(pixels, size, 64, 82, 24f, 10f, fill);
+
+        texture.SetPixels32(pixels);
+        texture.Apply(false, false);
+
+        generatedPhaseUnlockFallbackSprite = Sprite.Create(
+            texture,
+            new Rect(0f, 0f, size, size),
+            new Vector2(0.5f, 0.5f),
+            100f);
+
+        return generatedPhaseUnlockFallbackSprite;
+    }
+
+    private static void FillRect(Color32[] pixels, int width, int x, int y, int rectWidth, int rectHeight, Color32 color)
+    {
+        for (var yy = y; yy < y + rectHeight; yy++)
+        {
+            for (var xx = x; xx < x + rectWidth; xx++)
+            {
+                if (xx < 0 || yy < 0 || xx >= width || yy >= width)
+                {
+                    continue;
+                }
+
+                pixels[yy * width + xx] = color;
+            }
+        }
+    }
+
+    private static void DrawRing(Color32[] pixels, int width, int centerX, int centerY, float outerRadius, float thickness, Color32 color)
+    {
+        var innerRadius = Mathf.Max(0f, outerRadius - thickness);
+        var outerRadiusSqr = outerRadius * outerRadius;
+        var innerRadiusSqr = innerRadius * innerRadius;
+        var minX = Mathf.FloorToInt(centerX - outerRadius);
+        var maxX = Mathf.CeilToInt(centerX + outerRadius);
+        var minY = Mathf.FloorToInt(centerY - outerRadius);
+        var maxY = Mathf.CeilToInt(centerY + outerRadius);
+
+        for (var y = minY; y <= maxY; y++)
+        {
+            for (var x = minX; x <= maxX; x++)
+            {
+                if (x < 0 || y < 0 || x >= width || y >= width || y < centerY)
+                {
+                    continue;
+                }
+
+                var dx = x - centerX;
+                var dy = y - centerY;
+                var distanceSqr = (dx * dx) + (dy * dy);
+                if (distanceSqr <= outerRadiusSqr && distanceSqr >= innerRadiusSqr)
+                {
+                    pixels[y * width + x] = color;
+                }
+            }
+        }
     }
 
     private void PlayUiClip(AudioClip clip, float volume)

@@ -6,7 +6,8 @@ public class MemorizePhaseAdvanceUI : MonoBehaviour
 {
     [SerializeField] private GameRoundManager gameRoundManager;
     [SerializeField] private Button advanceButton;
-    [SerializeField] private string buttonLabel = "Start Investigation";
+    [SerializeField] private string startRememberLabel = "Start Remember";
+    [SerializeField] private string startInvestigationLabel = "Start Investigation";
     [SerializeField] private KeyCode advanceKey = KeyCode.Return;
 
     private TextMeshProUGUI buttonText;
@@ -105,7 +106,7 @@ public class MemorizePhaseAdvanceUI : MonoBehaviour
 
         if (buttonText != null)
         {
-            buttonText.text = buttonLabel;
+            buttonText.text = GetCurrentButtonLabel();
         }
     }
 
@@ -120,6 +121,11 @@ public class MemorizePhaseAdvanceUI : MonoBehaviour
         if (advanceButton.gameObject.activeSelf != shouldShow)
         {
             advanceButton.gameObject.SetActive(shouldShow);
+        }
+
+        if (buttonText != null)
+        {
+            buttonText.text = GetCurrentButtonLabel();
         }
     }
 
@@ -138,6 +144,22 @@ public class MemorizePhaseAdvanceUI : MonoBehaviour
             return;
         }
 
+        if (!gameRoundManager.IsRememberStarted())
+        {
+            gameRoundManager.StartRememberPhase();
+            return;
+        }
+
         gameRoundManager.AdvanceMemorizePhase();
+    }
+
+    private string GetCurrentButtonLabel()
+    {
+        if (gameRoundManager == null || !gameRoundManager.IsRememberStarted())
+        {
+            return startRememberLabel;
+        }
+
+        return startInvestigationLabel;
     }
 }

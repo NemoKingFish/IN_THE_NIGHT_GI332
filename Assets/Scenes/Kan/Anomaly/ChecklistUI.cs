@@ -605,6 +605,7 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
         RefreshResultText();
         RefreshSubmitPresentation();
         RefreshSelectionPresentation();
+        AutoCloseWindowWhenRoundResolved();
     }
 
     private void OnGamePhaseChanged(int oldValue, int newValue)
@@ -618,6 +619,7 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
         RefreshResultText();
         RefreshSubmitPresentation();
         RefreshSelectionPresentation();
+        AutoCloseWindowWhenRoundResolved();
     }
 
     private void OnAnomalyDataChanged()
@@ -706,6 +708,24 @@ public class ChecklistUI : MonoBehaviourPunCallbacks
         else
         {
             OpenWindow();
+        }
+    }
+
+    private void AutoCloseWindowWhenRoundResolved()
+    {
+        if (checklistWindow == null || !checklistWindow.activeSelf || checklistManager == null || gameRoundManager == null)
+        {
+            return;
+        }
+
+        var phase = (GameRoundManager.GamePhase)gameRoundManager.gamePhase.Value;
+        var result = (ChecklistManager.MatchResult)checklistManager.matchResult.Value;
+        var shouldCloseForResult = (phase == GameRoundManager.GamePhase.RoundTransition || phase == GameRoundManager.GamePhase.Victory)
+            && result != ChecklistManager.MatchResult.Playing;
+
+        if (shouldCloseForResult)
+        {
+            CloseWindow();
         }
     }
 

@@ -1,4 +1,4 @@
-# PROJECT_MEMORY
+﻿# PROJECT_MEMORY
 
 ## Purpose
 
@@ -25,13 +25,18 @@ The current product identity is the anomaly checklist loop. Older train-based id
 - Victory flow now stays in the gameplay scene and ends through the in-canvas `GameEndPanel`.
 - `Memorize` manual advance now has a keyboard fallback through `Enter` in addition to the button.
 - `Investigation` now shows a late warning message before time runs out:
-  - `ถ้าไม่ submit ระบบจะใช้ checklist ปัจจุบันทันที`
+  - `à¸–à¹‰à¸²à¹„à¸¡à¹ˆ submit à¸£à¸°à¸šà¸šà¸ˆà¸°à¹ƒà¸Šà¹‰ checklist à¸›à¸±à¸ˆà¸ˆà¸¸à¸šà¸±à¸™à¸—à¸±à¸™à¸—à¸µ`
 - Phase unlock now has a centered popup with a padlock image and unlock message.
 - `GameStatusUI` now contains audio clip slots for:
   - investigation warning
   - phase unlock
 - `PhotonScenePlayerAvatar` now supports walk/run footstep audio.
 - Added `LoopBgmSfx` for looping BGM with multiple tracks and crossfade transitions.
+- Checklist now auto-closes after submission results are shown in `RoundTransition` or `Victory`.
+- `SoundManager` now normalizes interrupted music transitions to prevent overlapping BGM when rounds or phase changes happen quickly.
+- Player sprint speed default is now 15 percent higher than the earlier baseline, and sprint footstep loudness is reduced by 25 percent relative to normal footsteps.
+- Phase unlock popup and investigation warning now use English text.
+- Phase unlock popup now falls back to a generated padlock icon if the imported sprite is unavailable, preventing the white placeholder image issue.
 
 ## High Concept
 
@@ -366,6 +371,9 @@ Recently implemented or confirmed:
 - Phase progression by round number.
 - Wrong answer returns to the start round of the current phase.
 - Spawn Lockdown phase between Memorize and Investigation.
+- Memorize phase now starts with players inside the Spawn/Lobby room and the door closed.
+- Players must press `Start Remember` before the Spawn/Lobby door opens and they can walk out to memorize the map.
+- `Start Investigation` now force-teleports the local player back to the assigned Spawn/Lobby pad immediately before Spawn Lockdown starts, fixing the host/local desync where only other players returned.
 - Score removed from active progression rules.
 - Phase-filtered anomaly spawning.
 - Empty-room anomaly rolls.

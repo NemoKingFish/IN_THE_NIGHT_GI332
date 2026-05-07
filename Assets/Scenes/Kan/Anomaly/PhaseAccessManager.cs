@@ -84,6 +84,7 @@ public class PhaseAccessManager : MonoBehaviour
 
         gameRoundManager.currentProgressionPhase.OnValueChanged += OnProgressionPhaseChanged;
         gameRoundManager.gamePhase.OnValueChanged += OnGamePhaseChanged;
+        gameRoundManager.memorizeAccessOpen.OnValueChanged += OnMemorizeAccessChanged;
         subscribed = true;
     }
 
@@ -96,6 +97,7 @@ public class PhaseAccessManager : MonoBehaviour
 
         gameRoundManager.currentProgressionPhase.OnValueChanged -= OnProgressionPhaseChanged;
         gameRoundManager.gamePhase.OnValueChanged -= OnGamePhaseChanged;
+        gameRoundManager.memorizeAccessOpen.OnValueChanged -= OnMemorizeAccessChanged;
         subscribed = false;
     }
 
@@ -108,6 +110,11 @@ public class PhaseAccessManager : MonoBehaviour
     private void OnGamePhaseChanged(int oldValue, int newValue)
     {
         PlayPhaseChangedAudioIfNeeded(newValue);
+        RefreshDoors();
+    }
+
+    private void OnMemorizeAccessChanged(int oldValue, int newValue)
+    {
         RefreshDoors();
     }
 
@@ -179,7 +186,7 @@ public class PhaseAccessManager : MonoBehaviour
         if (spawnRoomDoor != null)
         {
             var phase = (GameRoundManager.GamePhase)gameRoundManager.gamePhase.Value;
-            var shouldOpenSpawnDoor = phase == GameRoundManager.GamePhase.Memorize ||
+            var shouldOpenSpawnDoor = (phase == GameRoundManager.GamePhase.Memorize && gameRoundManager.IsRememberStarted()) ||
                                       phase == GameRoundManager.GamePhase.Investigation;
             spawnRoomDoor.SetOpen(shouldOpenSpawnDoor);
         }
