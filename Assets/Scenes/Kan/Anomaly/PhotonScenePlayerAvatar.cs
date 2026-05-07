@@ -6,8 +6,18 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
 {
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 4.5f;
+    [SerializeField] private float sprintSpeed = 7f;
     [SerializeField] private float gravity = -18f;
     [SerializeField] private float remoteSmoothing = 12f;
+
+    [Header("Footstep Audio")]
+    [SerializeField] private AudioSource footstepAudioSource;
+    [SerializeField] private AudioClip[] walkFootstepClips;
+    [SerializeField] private AudioClip[] sprintFootstepClips;
+    [SerializeField] private float walkStepInterval = 0.46f;
+    [SerializeField] private float sprintStepInterval = 0.31f;
+    [SerializeField] private float footstepMinSpeed = 0.2f;
+    [Range(0f, 1f)] [SerializeField] private float footstepVolume = 0.65f;
 
     [Header("Look")]
     [SerializeField] private float mouseSensitivity = 2.2f;
@@ -20,10 +30,14 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
     [SerializeField] private Animator animator;
     [SerializeField] private TextMeshPro nameLabel;
     [SerializeField] private bool hideLocalBody = false;
+    [SerializeField] private Transform localVisualRoot;
+    [SerializeField] private Transform remoteVisualRoot;
 
     private CharacterController characterController;
     private Camera playerCamera;
     private Renderer[] renderers;
+    private Renderer[] localRenderers;
+    private Renderer[] remoteRenderers;
     private Animator[] childAnimators;
     private int ownerActorNumber;
     private bool isLocalPlayer;
@@ -35,6 +49,7 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
     private readonly RaycastHit[] groundHits = new RaycastHit[8];
     private Vector3 lastAnimationSamplePosition;
     private float sampledHorizontalSpeed;
+    private float footstepTimer;
 
     public int OwnerActorNumber => ownerActorNumber;
     public bool IsLocalPlayer => isLocalPlayer;
@@ -55,6 +70,9 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
             animator.enabled = true;
         }
 
+        EnsureFootstepAudioSource();
+        ResolveDefaultFootstepClips();
+
         DisableExtraAnimators();
 
         if (cameraTarget == null)
@@ -70,6 +88,19 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
         {
             nameLabel = GetComponentInChildren<TextMeshPro>(true);
         }
+
+        if (localVisualRoot == null)
+        {
+            localVisualRoot = FindChildRecursive(transform, "Player");
+        }
+
+        if (remoteVisualRoot == null)
+        {
+            remoteVisualRoot = FindChildRecursive(transform, "Dummy");
+        }
+
+        localRenderers = localVisualRoot != null ? localVisualRoot.GetComponentsInChildren<Renderer>(true) : System.Array.Empty<Renderer>();
+        remoteRenderers = remoteVisualRoot != null ? remoteVisualRoot.GetComponentsInChildren<Renderer>(true) : System.Array.Empty<Renderer>();
 
         remoteTargetPosition = transform.position;
         remoteTargetRotation = transform.rotation;
@@ -93,6 +124,7 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
         }
 
         UpdateAnimator();
+        UpdateFootstepAudio();
     }
 
     private void LateUpdate()
@@ -120,7 +152,7 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
         {
             EnsureCamera();
             DisableNonPlayerCameras();
-            SetLocalRenderersVisible(!hideLocalBody);
+            ApplyVisualPresentation(true);
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
@@ -131,7 +163,7 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
                 playerCamera.gameObject.SetActive(false);
             }
 
-            SetLocalRenderersVisible(true);
+            ApplyVisualPresentation(false);
         }
     }
 
@@ -182,11 +214,13 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
 
         var inputX = Input.GetAxisRaw("Horizontal");
         var inputZ = Input.GetAxisRaw("Vertical");
+        var isSprinting = Input.GetKey(KeyCode.LeftShift);
         var input = new Vector3(inputX, 0f, inputZ);
         input = Vector3.ClampMagnitude(input, 1f);
 
         var moveWorld = (transform.forward * input.z) + (transform.right * input.x);
-        var horizontalVelocity = moveWorld * moveSpeed;
+        var currentMoveSpeed = isSprinting ? sprintSpeed : moveSpeed;
+        var horizontalVelocity = moveWorld * currentMoveSpeed;
 
         var grounded = IsGrounded();
         if (grounded && verticalVelocity < 0f)
@@ -260,7 +294,8 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
         sampledHorizontalSpeed = Mathf.Lerp(sampledHorizontalSpeed, horizontalVelocity.magnitude, Time.deltaTime * 12f);
         var speed = sampledHorizontalSpeed;
         var grounded = IsGrounded();
-        var normalizedSpeed = Mathf.Clamp01(speed / Mathf.Max(0.01f, moveSpeed));
+        var referenceSpeed = Mathf.Max(0.01f, sprintSpeed);
+        var normalizedSpeed = Mathf.Clamp01(speed / referenceSpeed);
 
         SetAnimatorFloatIfPresent("Speed", speed);
         SetAnimatorFloatIfPresent("MotionSpeed", normalizedSpeed);
@@ -270,6 +305,55 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
         SetAnimatorBoolIfPresent("Grounded", grounded);
         SetAnimatorBoolIfPresent("FreeFall", !grounded && verticalVelocity < -0.1f);
         SetAnimatorBoolIfPresent("Jump", false);
+    }
+
+    private void UpdateFootstepAudio()
+    {
+        if (footstepAudioSource == null)
+        {
+            return;
+        }
+
+        var grounded = IsGrounded();
+        if (!grounded)
+        {
+            footstepTimer = 0f;
+            return;
+        }
+
+        var speed = sampledHorizontalSpeed;
+        if (speed < footstepMinSpeed)
+        {
+            footstepTimer = 0f;
+            return;
+        }
+
+        var isSprinting = speed > (moveSpeed + sprintSpeed) * 0.5f;
+        var clips = isSprinting && sprintFootstepClips != null && sprintFootstepClips.Length > 0
+            ? sprintFootstepClips
+            : walkFootstepClips;
+
+        if (clips == null || clips.Length == 0)
+        {
+            return;
+        }
+
+        footstepTimer += Time.deltaTime;
+        var targetInterval = Mathf.Max(0.05f, isSprinting ? sprintStepInterval : walkStepInterval);
+        if (footstepTimer < targetInterval)
+        {
+            return;
+        }
+
+        footstepTimer = 0f;
+        var clip = clips[UnityEngine.Random.Range(0, clips.Length)];
+        if (clip == null)
+        {
+            return;
+        }
+
+        footstepAudioSource.pitch = isSprinting ? 1.08f : 1f;
+        footstepAudioSource.PlayOneShot(clip, Mathf.Clamp01(footstepVolume));
     }
 
     private bool IsGrounded()
@@ -364,13 +448,71 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
         }
     }
 
-    private void SetLocalRenderersVisible(bool visible)
+    private void ApplyVisualPresentation(bool isLocalAvatar)
     {
-        for (var i = 0; i < renderers.Length; i++)
+        if (localRenderers.Length == 0 && remoteRenderers.Length == 0)
         {
-            if (renderers[i] != null)
+            SetRendererGroupVisible(renderers, isLocalAvatar ? !hideLocalBody : true);
+            return;
+        }
+
+        SetRendererGroupVisible(localRenderers, isLocalAvatar && !hideLocalBody);
+        SetRendererGroupVisible(remoteRenderers, !isLocalAvatar);
+    }
+
+    private static void SetRendererGroupVisible(Renderer[] rendererGroup, bool visible)
+    {
+        if (rendererGroup == null)
+        {
+            return;
+        }
+
+        for (var i = 0; i < rendererGroup.Length; i++)
+        {
+            if (rendererGroup[i] != null)
             {
-                renderers[i].enabled = visible;
+                rendererGroup[i].enabled = visible;
+            }
+        }
+    }
+
+    private void EnsureFootstepAudioSource()
+    {
+        if (footstepAudioSource == null)
+        {
+            footstepAudioSource = GetComponent<AudioSource>();
+        }
+
+        if (footstepAudioSource == null)
+        {
+            footstepAudioSource = gameObject.AddComponent<AudioSource>();
+        }
+
+        footstepAudioSource.playOnAwake = false;
+        footstepAudioSource.loop = false;
+        footstepAudioSource.spatialBlend = 1f;
+        footstepAudioSource.rolloffMode = AudioRolloffMode.Linear;
+        footstepAudioSource.minDistance = 1.2f;
+        footstepAudioSource.maxDistance = 14f;
+    }
+
+    private void ResolveDefaultFootstepClips()
+    {
+        if (walkFootstepClips == null || walkFootstepClips.Length == 0)
+        {
+            var walkClip = Resources.Load<AudioClip>("Audio/Player/WalkDefault");
+            if (walkClip != null)
+            {
+                walkFootstepClips = new[] { walkClip };
+            }
+        }
+
+        if (sprintFootstepClips == null || sprintFootstepClips.Length == 0)
+        {
+            var sprintClip = Resources.Load<AudioClip>("Audio/Player/RunDefault");
+            if (sprintClip != null)
+            {
+                sprintFootstepClips = new[] { sprintClip };
             }
         }
     }
@@ -443,28 +585,46 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
 
     private void SetAnimatorFloatIfPresent(string parameterName, float value)
     {
-        if (HasAnimatorParameter(parameterName, AnimatorControllerParameterType.Float))
+        if (childAnimators == null || string.IsNullOrWhiteSpace(parameterName))
         {
-            animator.SetFloat(parameterName, value);
+            return;
+        }
+
+        for (var i = 0; i < childAnimators.Length; i++)
+        {
+            var targetAnimator = childAnimators[i];
+            if (HasAnimatorParameter(targetAnimator, parameterName, AnimatorControllerParameterType.Float))
+            {
+                targetAnimator.SetFloat(parameterName, value);
+            }
         }
     }
 
     private void SetAnimatorBoolIfPresent(string parameterName, bool value)
     {
-        if (HasAnimatorParameter(parameterName, AnimatorControllerParameterType.Bool))
+        if (childAnimators == null || string.IsNullOrWhiteSpace(parameterName))
         {
-            animator.SetBool(parameterName, value);
+            return;
+        }
+
+        for (var i = 0; i < childAnimators.Length; i++)
+        {
+            var targetAnimator = childAnimators[i];
+            if (HasAnimatorParameter(targetAnimator, parameterName, AnimatorControllerParameterType.Bool))
+            {
+                targetAnimator.SetBool(parameterName, value);
+            }
         }
     }
 
-    private bool HasAnimatorParameter(string parameterName, AnimatorControllerParameterType parameterType)
+    private static bool HasAnimatorParameter(Animator targetAnimator, string parameterName, AnimatorControllerParameterType parameterType)
     {
-        if (animator == null || string.IsNullOrWhiteSpace(parameterName))
+        if (targetAnimator == null || string.IsNullOrWhiteSpace(parameterName))
         {
             return false;
         }
 
-        var parameters = animator.parameters;
+        var parameters = targetAnimator.parameters;
         for (var i = 0; i < parameters.Length; i++)
         {
             if (parameters[i].type == parameterType && parameters[i].name == parameterName)
@@ -498,7 +658,8 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
                 continue;
             }
 
-            candidate.enabled = false;
+            candidate.enabled = true;
+            candidate.applyRootMotion = false;
         }
     }
 
