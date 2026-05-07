@@ -7,6 +7,7 @@ public class MemorizePhaseAdvanceUI : MonoBehaviour
     [SerializeField] private GameRoundManager gameRoundManager;
     [SerializeField] private Button advanceButton;
     [SerializeField] private string buttonLabel = "Start Investigation";
+    [SerializeField] private KeyCode advanceKey = KeyCode.Return;
 
     private TextMeshProUGUI buttonText;
 
@@ -26,6 +27,11 @@ public class MemorizePhaseAdvanceUI : MonoBehaviour
         }
 
         RefreshButtonState();
+
+        if (ShouldAllowAdvanceHotkey() && Input.GetKeyDown(advanceKey))
+        {
+            OnAdvancePressed();
+        }
     }
 
     private void ResolveReferences()
@@ -115,6 +121,14 @@ public class MemorizePhaseAdvanceUI : MonoBehaviour
         {
             advanceButton.gameObject.SetActive(shouldShow);
         }
+    }
+
+    private bool ShouldAllowAdvanceHotkey()
+    {
+        return gameRoundManager != null &&
+               gameRoundManager.IsMemorizePhase() &&
+               !gameRoundManager.HasMemorizeTimer() &&
+               !GameplayPauseMenu.IsLocalPauseMenuOpen;
     }
 
     private void OnAdvancePressed()

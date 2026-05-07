@@ -1,6 +1,7 @@
 using TMPro;
 using Photon.Pun;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GameStatusUI : MonoBehaviour
 {
@@ -11,15 +12,38 @@ public class GameStatusUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI scoreText;
     [SerializeField] private TextMeshProUGUI roundText;
     [SerializeField] private TextMeshProUGUI phaseText;
+    [Header("Investigation Warning")]
+    [SerializeField] private TextMeshProUGUI investigationWarningText;
+    [SerializeField] private float investigationWarningThresholdSeconds = 15f;
+    [SerializeField] private string investigationWarningMessage = "ถ้าไม่ submit ระบบจะใช้ checklist ปัจจุบันทันที";
+    [SerializeField] private AudioClip investigationWarningClip;
+    [Range(0f, 1f)] [SerializeField] private float investigationWarningVolume = 1f;
+    [Header("Phase Unlock Popup")]
+    [SerializeField] private GameObject phaseUnlockPanel;
+    [SerializeField] private Image phaseUnlockImage;
+    [SerializeField] private TextMeshProUGUI phaseUnlockText;
+    [SerializeField] private Sprite phaseUnlockSprite;
+    [SerializeField] private AudioClip phaseUnlockClip;
+    [Range(0f, 1f)] [SerializeField] private float phaseUnlockVolume = 1f;
+    [SerializeField] private float phaseUnlockDisplayDuration = 3f;
+    [SerializeField] private Vector2 phaseUnlockImageSize = new Vector2(180f, 180f);
 
     private bool subscribed;
     private bool createdRoomPasswordTextAtRuntime;
+    private bool createdInvestigationWarningAtRuntime;
+    private bool createdPhaseUnlockAtRuntime;
+    private bool hasShownInvestigationWarningThisPhase;
+    private int lastObservedProgressionPhase = 1;
+    private AudioSource uiAudioSource;
+    private Coroutine phaseUnlockRoutine;
 
     private void Start()
     {
         ResolveReferences();
         TrySubscribe();
         RefreshUI();
+        RefreshInvestigationWarning();
+        HidePhaseUnlockPanelImmediate();
     }
 
     private void OnDestroy()
@@ -78,6 +102,71 @@ public class GameStatusUI : MonoBehaviour
         {
             phaseText = FindNamedText("PhaseText");
         }
+
+        if (investigationWarningText == null)
+        {
+            investigationWarningText = FindNamedText("InvestigationWarningText");
+        }
+
+        if (investigationWarningText == null)
+        {
+            investigationWarningText = CreateCenterWarningText();
+            createdInvestigationWarningAtRuntime = investigationWarningText != null;
+        }
+
+        if (createdInvestigationWarningAtRuntime)
+        {
+            ConfigureInvestigationWarningTextLayout();
+        }
+
+        if (phaseUnlockPanel == null)
+        {
+            var panelTransform = FindNamedTransform("PhaseUnlockPanel");
+            phaseUnlockPanel = panelTransform != null ? panelTransform.gameObject : null;
+        }
+
+        if (phaseUnlockPanel == null)
+        {
+            CreatePhaseUnlockPanel();
+            createdPhaseUnlockAtRuntime = phaseUnlockPanel != null;
+        }
+
+        if (phaseUnlockPanel != null)
+        {
+            if (phaseUnlockImage == null)
+            {
+                phaseUnlockImage = phaseUnlockPanel.transform.Find("PhaseUnlockImage")?.GetComponent<Image>();
+            }
+
+            if (phaseUnlockText == null)
+            {
+                phaseUnlockText = phaseUnlockPanel.transform.Find("PhaseUnlockText")?.GetComponent<TextMeshProUGUI>();
+            }
+        }
+
+        if (phaseUnlockSprite == null)
+        {
+            phaseUnlockSprite = Resources.Load<Sprite>("UI/phase_unlock_padlock");
+        }
+
+        if (phaseUnlockImage != null && phaseUnlockSprite != null)
+        {
+            phaseUnlockImage.sprite = phaseUnlockSprite;
+            phaseUnlockImage.preserveAspect = true;
+        }
+
+        if (uiAudioSource == null)
+        {
+            uiAudioSource = GetComponent<AudioSource>();
+        }
+
+        if (uiAudioSource == null)
+        {
+            uiAudioSource = gameObject.AddComponent<AudioSource>();
+        }
+
+        uiAudioSource.playOnAwake = false;
+        uiAudioSource.loop = false;
     }
 
     private void TrySubscribe()
@@ -112,8 +201,16 @@ public class GameStatusUI : MonoBehaviour
 
     private void OnScoreChanged(int oldValue, int newValue) => RefreshUI();
     private void OnRoundChanged(int oldValue, int newValue) => RefreshUI();
-    private void OnProgressionPhaseChanged(int oldValue, int newValue) => RefreshUI();
-    private void OnPhaseChanged(int oldValue, int newValue) => RefreshUI();
+    private void OnProgressionPhaseChanged(int oldValue, int newValue)
+    {
+        RefreshUI();
+        ShowPhaseUnlockIfNeeded(oldValue, newValue);
+    }
+    private void OnPhaseChanged(int oldValue, int newValue)
+    {
+        RefreshUI();
+        HandleInvestigationWarningState(oldValue, newValue);
+    }
     private void OnPhaseEndTimeChanged(double oldValue, double newValue) => RefreshUI();
 
     private void RefreshUI()
@@ -159,6 +256,8 @@ public class GameStatusUI : MonoBehaviour
                     break;
             }
         }
+
+        RefreshInvestigationWarning();
     }
 
     private TextMeshProUGUI FindNamedText(string objectName)
@@ -233,5 +332,240 @@ public class GameStatusUI : MonoBehaviour
         text.rectTransform.pivot = new Vector2(0f, 1f);
         text.rectTransform.anchoredPosition = new Vector2(8f, -8f);
         text.rectTransform.sizeDelta = new Vector2(420f, 40f);
+    }
+
+    private TextMeshProUGUI CreateCenterWarningText()
+    {
+        var rootCanvas = GetComponentInParent<Canvas>()?.rootCanvas;
+        if (rootCanvas == null)
+        {
+            return null;
+        }
+
+        var textObject = new GameObject("InvestigationWarningText", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+        textObject.transform.SetParent(rootCanvas.transform, false);
+
+        var text = textObject.GetComponent<TextMeshProUGUI>();
+        text.font = TMP_Settings.defaultFontAsset;
+        text.fontSize = 34f;
+        text.alignment = TextAlignmentOptions.Center;
+        text.color = new Color(1f, 0.85f, 0.4f, 1f);
+        text.raycastTarget = false;
+        text.enableWordWrapping = true;
+        text.text = string.Empty;
+        textObject.SetActive(false);
+        return text;
+    }
+
+    private void ConfigureInvestigationWarningTextLayout()
+    {
+        if (investigationWarningText == null)
+        {
+            return;
+        }
+
+        var rect = investigationWarningText.rectTransform;
+        rect.anchorMin = new Vector2(0.5f, 1f);
+        rect.anchorMax = new Vector2(0.5f, 1f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.anchoredPosition = new Vector2(0f, -96f);
+        rect.sizeDelta = new Vector2(980f, 110f);
+    }
+
+    private Transform FindNamedTransform(string objectName)
+    {
+        foreach (var rect in GetComponentsInChildren<RectTransform>(true))
+        {
+            if (rect != null && rect.name == objectName)
+            {
+                return rect;
+            }
+        }
+
+        return null;
+    }
+
+    private void RefreshInvestigationWarning()
+    {
+        if (investigationWarningText == null || gameRoundManager == null)
+        {
+            return;
+        }
+
+        var shouldWarn = gameRoundManager.IsInvestigationPhase() &&
+                         gameRoundManager.GetInvestigationSecondsRemaining() > 0 &&
+                         gameRoundManager.GetInvestigationSecondsRemaining() <= Mathf.CeilToInt(investigationWarningThresholdSeconds);
+
+        if (!shouldWarn)
+        {
+            if (investigationWarningText.gameObject.activeSelf)
+            {
+                investigationWarningText.gameObject.SetActive(false);
+            }
+
+            return;
+        }
+
+        var secondsRemaining = gameRoundManager.GetInvestigationSecondsRemaining();
+        investigationWarningText.text = $"เหลือ {secondsRemaining} วิ\n{investigationWarningMessage}";
+        if (!investigationWarningText.gameObject.activeSelf)
+        {
+            investigationWarningText.gameObject.SetActive(true);
+        }
+
+        if (!hasShownInvestigationWarningThisPhase)
+        {
+            hasShownInvestigationWarningThisPhase = true;
+            PlayUiClip(investigationWarningClip, investigationWarningVolume);
+        }
+    }
+
+    private void HandleInvestigationWarningState(int oldPhase, int newPhase)
+    {
+        if (newPhase == (int)GameRoundManager.GamePhase.Investigation)
+        {
+            hasShownInvestigationWarningThisPhase = false;
+            RefreshInvestigationWarning();
+            return;
+        }
+
+        hasShownInvestigationWarningThisPhase = false;
+        if (investigationWarningText != null)
+        {
+            investigationWarningText.gameObject.SetActive(false);
+        }
+    }
+
+    private void CreatePhaseUnlockPanel()
+    {
+        var rootCanvas = GetComponentInParent<Canvas>()?.rootCanvas;
+        if (rootCanvas == null)
+        {
+            return;
+        }
+
+        phaseUnlockPanel = new GameObject("PhaseUnlockPanel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        phaseUnlockPanel.transform.SetParent(rootCanvas.transform, false);
+
+        var panelRect = phaseUnlockPanel.GetComponent<RectTransform>();
+        panelRect.anchorMin = new Vector2(0.5f, 0.5f);
+        panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+        panelRect.pivot = new Vector2(0.5f, 0.5f);
+        panelRect.anchoredPosition = Vector2.zero;
+        panelRect.sizeDelta = new Vector2(520f, 340f);
+
+        var panelImage = phaseUnlockPanel.GetComponent<Image>();
+        panelImage.color = new Color(0f, 0f, 0f, 0.55f);
+        panelImage.raycastTarget = false;
+
+        var iconObject = new GameObject("PhaseUnlockImage", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        iconObject.transform.SetParent(phaseUnlockPanel.transform, false);
+        phaseUnlockImage = iconObject.GetComponent<Image>();
+        phaseUnlockImage.raycastTarget = false;
+        phaseUnlockImage.preserveAspect = true;
+        var iconRect = phaseUnlockImage.rectTransform;
+        iconRect.anchorMin = new Vector2(0.5f, 0.5f);
+        iconRect.anchorMax = new Vector2(0.5f, 0.5f);
+        iconRect.pivot = new Vector2(0.5f, 0.5f);
+        iconRect.anchoredPosition = new Vector2(0f, 48f);
+        iconRect.sizeDelta = phaseUnlockImageSize;
+
+        var textObject = new GameObject("PhaseUnlockText", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+        textObject.transform.SetParent(phaseUnlockPanel.transform, false);
+        phaseUnlockText = textObject.GetComponent<TextMeshProUGUI>();
+        phaseUnlockText.font = TMP_Settings.defaultFontAsset;
+        phaseUnlockText.fontSize = 34f;
+        phaseUnlockText.alignment = TextAlignmentOptions.Center;
+        phaseUnlockText.color = Color.white;
+        phaseUnlockText.raycastTarget = false;
+        var textRect = phaseUnlockText.rectTransform;
+        textRect.anchorMin = new Vector2(0.5f, 0.5f);
+        textRect.anchorMax = new Vector2(0.5f, 0.5f);
+        textRect.pivot = new Vector2(0.5f, 0.5f);
+        textRect.anchoredPosition = new Vector2(0f, -92f);
+        textRect.sizeDelta = new Vector2(460f, 100f);
+
+        phaseUnlockPanel.SetActive(false);
+    }
+
+    private void ShowPhaseUnlockIfNeeded(int oldValue, int newValue)
+    {
+        if (gameRoundManager == null || phaseUnlockPanel == null)
+        {
+            return;
+        }
+
+        if (gameRoundManager.currentRound.Value <= 0)
+        {
+            lastObservedProgressionPhase = newValue;
+            return;
+        }
+
+        if (newValue <= oldValue || newValue <= 1)
+        {
+            lastObservedProgressionPhase = newValue;
+            return;
+        }
+
+        lastObservedProgressionPhase = newValue;
+
+        if (phaseUnlockText != null)
+        {
+            phaseUnlockText.text = GetPhaseUnlockMessage(newValue);
+        }
+
+        if (phaseUnlockImage != null && phaseUnlockSprite != null)
+        {
+            phaseUnlockImage.sprite = phaseUnlockSprite;
+        }
+
+        if (phaseUnlockRoutine != null)
+        {
+            StopCoroutine(phaseUnlockRoutine);
+        }
+
+        phaseUnlockRoutine = StartCoroutine(ShowPhaseUnlockRoutine());
+        PlayUiClip(phaseUnlockClip, phaseUnlockVolume);
+    }
+
+    private System.Collections.IEnumerator ShowPhaseUnlockRoutine()
+    {
+        if (phaseUnlockPanel == null)
+        {
+            yield break;
+        }
+
+        phaseUnlockPanel.SetActive(true);
+        yield return new WaitForSeconds(Mathf.Max(0.5f, phaseUnlockDisplayDuration));
+        HidePhaseUnlockPanelImmediate();
+        phaseUnlockRoutine = null;
+    }
+
+    private void HidePhaseUnlockPanelImmediate()
+    {
+        if (phaseUnlockPanel != null)
+        {
+            phaseUnlockPanel.SetActive(false);
+        }
+    }
+
+    private static string GetPhaseUnlockMessage(int progressionPhase)
+    {
+        return progressionPhase switch
+        {
+            2 => "มีโซนใหม่ปลดล็อก\nโซนฝั่งซ้ายเปิดแล้ว",
+            3 => "มีโซนใหม่ปลดล็อก\nโซนฝั่งขวาเปิดแล้ว",
+            _ => "มีโซนใหม่ปลดล็อก"
+        };
+    }
+
+    private void PlayUiClip(AudioClip clip, float volume)
+    {
+        if (uiAudioSource == null || clip == null)
+        {
+            return;
+        }
+
+        uiAudioSource.PlayOneShot(clip, Mathf.Clamp01(volume));
     }
 }

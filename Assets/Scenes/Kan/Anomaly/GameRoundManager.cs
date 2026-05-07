@@ -545,7 +545,6 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
         if (correct && currentRound.Value >= totalRounds)
         {
             SetPhaseState(GamePhase.Victory, 0d);
-            TryLoadVictoryScene();
             return;
         }
 

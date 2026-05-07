@@ -20,6 +20,19 @@ Last updated: 2026-05-07
 
 The current product identity is the anomaly checklist loop. Older train-based ideas and Unity Netcode experiments exist in the project, but they are not the main gameplay direction right now.
 
+## Latest UX / Flow Updates
+
+- Victory flow now stays in the gameplay scene and ends through the in-canvas `GameEndPanel`.
+- `Memorize` manual advance now has a keyboard fallback through `Enter` in addition to the button.
+- `Investigation` now shows a late warning message before time runs out:
+  - `ถ้าไม่ submit ระบบจะใช้ checklist ปัจจุบันทันที`
+- Phase unlock now has a centered popup with a padlock image and unlock message.
+- `GameStatusUI` now contains audio clip slots for:
+  - investigation warning
+  - phase unlock
+- `PhotonScenePlayerAvatar` now supports walk/run footstep audio.
+- Added `LoopBgmSfx` for looping BGM with multiple tracks and crossfade transitions.
+
 ## High Concept
 
 Players are trapped in a strange place at night. They must study the environment while it is normal, return to a safe spawn room, wait while the game rolls anomalies, then explore again to find what has changed.
@@ -268,6 +281,7 @@ Current player features:
 - Local and remote movement state sync.
 - Ground-based movement only.
 - Walk/sprint style movement support through current movement values.
+- Current sprint input is `LeftShift`.
 - Gravity/fall support.
 - Jump input and jump animation are currently removed from the main player control direction.
 - Spawn-pad teleport reset support for phase resets.
