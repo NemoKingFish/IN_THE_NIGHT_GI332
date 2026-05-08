@@ -129,6 +129,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ChecklistItemUI
   toggle: {fileID: 8168740125345924660}
   labelText: {fileID: 5220215439715131205}
+  button: {fileID: 0}
+  backgroundImage: {fileID: 0}
+  selectionOutline: {fileID: 0}
 --- !u!114 &8927755506437154005
 MonoBehaviour:
   m_ObjectHideFlags: 0

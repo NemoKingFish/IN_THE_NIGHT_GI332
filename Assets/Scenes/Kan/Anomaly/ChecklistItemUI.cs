@@ -141,12 +141,6 @@ public class ChecklistItemUI : MonoBehaviour
             layoutElement.flexibleHeight = 0f;
         }
 
-        var layoutGroup = GetComponent<HorizontalLayoutGroup>();
-        if (layoutGroup != null)
-        {
-            layoutGroup.enabled = false;
-        }
-
         if (transform is RectTransform rectTransform)
         {
             rectTransform.anchorMin = new Vector2(0f, 1f);
@@ -160,47 +154,20 @@ public class ChecklistItemUI : MonoBehaviour
             labelText.raycastTarget = false;
             labelText.enableWordWrapping = true;
             labelText.enabled = true;
-            labelText.alignment = TextAlignmentOptions.Center;
-
-            if (labelText.transform is RectTransform labelRectTransform)
-            {
-                labelRectTransform.anchorMin = Vector2.zero;
-                labelRectTransform.anchorMax = Vector2.one;
-                labelRectTransform.pivot = new Vector2(0.5f, 0.5f);
-                labelRectTransform.offsetMin = new Vector2(22f, 14f);
-                labelRectTransform.offsetMax = new Vector2(-22f, -14f);
-            }
         }
 
         if (toggle != null)
         {
-            toggle.transition = Selectable.Transition.None;
-            toggle.targetGraphic = backgroundImage;
-
-            if (toggle.graphic != null)
+            if (toggle.targetGraphic == null && backgroundImage != null)
             {
-                toggle.graphic.gameObject.SetActive(false);
+                toggle.targetGraphic = backgroundImage;
             }
-
-            HideLegacyToggleVisuals();
         }
 
-        var childImages = GetComponentsInChildren<Image>(true);
-        for (var i = 0; i < childImages.Length; i++)
+        if (button.targetGraphic == null && backgroundImage != null)
         {
-            if (childImages[i] == null || childImages[i] == backgroundImage)
-            {
-                continue;
-            }
-
-            if (childImages[i].gameObject.name.Contains("Checkmark"))
-            {
-                childImages[i].gameObject.SetActive(false);
-            }
+            button.targetGraphic = backgroundImage;
         }
-
-        button.transition = Selectable.Transition.None;
-        button.targetGraphic = backgroundImage;
 
         selectionOutline.effectDistance = new Vector2(3f, -3f);
         selectionOutline.useGraphicAlpha = false;
@@ -228,41 +195,9 @@ public class ChecklistItemUI : MonoBehaviour
             return;
         }
 
-        if (labelText.color.a <= 0f || IsNearlyWhite(labelText.color))
+        if (labelText.color.a <= 0f)
         {
             labelText.color = new Color(0.12f, 0.12f, 0.12f, 1f);
-        }
-
-        labelText.alignment = TextAlignmentOptions.Center;
-    }
-
-    private static bool IsNearlyWhite(Color color)
-    {
-        return color.r >= 0.9f && color.g >= 0.9f && color.b >= 0.9f;
-    }
-
-    private void HideLegacyToggleVisuals()
-    {
-        if (toggle == null)
-        {
-            return;
-        }
-
-        foreach (var graphic in toggle.GetComponentsInChildren<Graphic>(true))
-        {
-            if (graphic == null)
-            {
-                continue;
-            }
-
-            if (backgroundImage != null && graphic.gameObject == backgroundImage.gameObject)
-            {
-                continue;
-            }
-
-            graphic.enabled = false;
-            graphic.raycastTarget = false;
-            graphic.gameObject.SetActive(false);
         }
     }
 
