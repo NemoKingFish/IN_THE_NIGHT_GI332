@@ -15,6 +15,8 @@ public class AnomalySpawnPointEditor : Editor
     private SerializedProperty assignedAnomalyTypesProperty;
     private SerializedProperty anomalyPhaseProperty;
     private SerializedProperty anomalyChanceProperty;
+    private SerializedProperty uniqueAnomalyProperty;
+    private SerializedProperty anomalyBehaviourProperty;
     private SerializedProperty movedLocalPositionOffsetProperty;
     private SerializedProperty movedLocalEulerOffsetProperty;
     private SerializedProperty overrideChangedObjectScaleProperty;
@@ -40,6 +42,8 @@ public class AnomalySpawnPointEditor : Editor
         assignedAnomalyTypesProperty = serializedObject.FindProperty("assignedAnomalyTypes");
         anomalyPhaseProperty = serializedObject.FindProperty("anomalyPhase");
         anomalyChanceProperty = serializedObject.FindProperty("anomalyChance");
+        uniqueAnomalyProperty = serializedObject.FindProperty("uniqueAnomaly");
+        anomalyBehaviourProperty = serializedObject.FindProperty("anomalyBehaviour");
         movedLocalPositionOffsetProperty = serializedObject.FindProperty("movedLocalPositionOffset");
         movedLocalEulerOffsetProperty = serializedObject.FindProperty("movedLocalEulerOffset");
         overrideChangedObjectScaleProperty = serializedObject.FindProperty("overrideChangedObjectScale");
@@ -182,6 +186,24 @@ public class AnomalySpawnPointEditor : Editor
 
         EditorGUILayout.Space(4f);
         EditorGUILayout.Slider(anomalyChanceProperty, 0f, 50f, new GUIContent("Anomaly Chance"));
+        EditorGUILayout.PropertyField(uniqueAnomalyProperty, new GUIContent("Unique Anomaly"));
+
+        if (uniqueAnomalyProperty.boolValue)
+        {
+            EditorGUILayout.HelpBox("Unique Anomaly is a featured event. If this anomaly gets selected for the round and successfully spawns, other spawned anomalies in the same round will be turned off so only this one remains.", MessageType.Info);
+        }
+
+        EditorGUILayout.Space(4f);
+        EditorGUILayout.PropertyField(anomalyBehaviourProperty, new GUIContent("Anomaly Behaviour"));
+
+        if (target is AnomalySpawnPoint anomalyPoint && anomalyPoint.GetAnomalyBehaviourComponent() != null && anomalyPoint.GetAnomalyBehaviourComponent() is not IAnomalyBehaviour)
+        {
+            EditorGUILayout.HelpBox("Assigned Anomaly Behaviour must implement IAnomalyBehaviour to receive activate/deactivate callbacks from this spawn point.", MessageType.Warning);
+        }
+        else
+        {
+            EditorGUILayout.HelpBox("Optional Anomaly Behaviour lets this spawn point trigger a custom script only while it is an active anomaly. Good for event-style anomalies such as looping doors, flickering systems, or scripted scares.", MessageType.None);
+        }
 
         EditorGUILayout.Space(4f);
 

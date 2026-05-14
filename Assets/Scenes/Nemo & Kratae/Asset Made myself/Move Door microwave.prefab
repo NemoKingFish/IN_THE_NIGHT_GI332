@@ -173,12 +173,13 @@ MonoBehaviour:
   preferSceneObjectAsNormal: 1
   normalPrefab: {fileID: 0}
   anomalyPrefab: {fileID: 0}
-  anomalyID: 39
+  anomalyID: 41
   anomalyName: door
   assignedAnomalyType: 2
   assignedAnomalyTypes: 02000000
   anomalyPhase: 3
   anomalyChance: 20
+  uniqueAnomaly: 0
   movedLocalPositionOffset: {x: 0, y: 0, z: 0}
   movedLocalEulerOffset: {x: 0, y: 0, z: 0}
   overrideChangedObjectScale: 0

@@ -652,18 +652,29 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
             return;
         }
 
-        ShuffleEligiblePoints(eligiblePoints);
+        var candidatePoints = BuildSpawnCandidateOrder(eligiblePoints);
         var spawnedPoints = new List<AnomalySpawnPoint>(anomalyCount);
 
-        for (var index = 0; index < anomalyCount; index++)
+        for (var index = 0; index < anomalyCount && index < candidatePoints.Count; index++)
         {
-            var point = eligiblePoints[index];
+            var point = candidatePoints[index];
             point.SpawnAnomaly(progressionPhase);
 
-            if (point.HasAnomaly())
+            if (!point.HasAnomaly())
             {
-                spawnedPoints.Add(point);
+                continue;
             }
+
+            if (point.IsUniqueAnomaly())
+            {
+                ResetSpawnedPointsToNormal(spawnedPoints);
+                spawnedPoints.Clear();
+                spawnedPoints.Add(point);
+                LogSpawnedAnomalies(progressionPhase, spawnedPoints, "Unique anomaly triggered and suppressed other anomalies for this round.");
+                return;
+            }
+
+            spawnedPoints.Add(point);
         }
 
         LogSpawnedAnomalies(progressionPhase, spawnedPoints, null);
@@ -956,6 +967,55 @@ public class GameRoundManager : MonoBehaviourPunCallbacks, IOnEventCallback
         {
             var swapIndex = UnityEngine.Random.Range(0, index + 1);
             (eligiblePoints[index], eligiblePoints[swapIndex]) = (eligiblePoints[swapIndex], eligiblePoints[index]);
+        }
+    }
+
+    private static List<AnomalySpawnPoint> BuildSpawnCandidateOrder(List<AnomalySpawnPoint> eligiblePoints)
+    {
+        var uniquePoints = new List<AnomalySpawnPoint>();
+        var normalPoints = new List<AnomalySpawnPoint>();
+
+        for (var index = 0; index < eligiblePoints.Count; index++)
+        {
+            var point = eligiblePoints[index];
+            if (point == null)
+            {
+                continue;
+            }
+
+            if (point.IsUniqueAnomaly())
+            {
+                uniquePoints.Add(point);
+            }
+            else
+            {
+                normalPoints.Add(point);
+            }
+        }
+
+        ShuffleEligiblePoints(uniquePoints);
+        ShuffleEligiblePoints(normalPoints);
+
+        var orderedPoints = new List<AnomalySpawnPoint>(eligiblePoints.Count);
+        orderedPoints.AddRange(uniquePoints);
+        orderedPoints.AddRange(normalPoints);
+        return orderedPoints;
+    }
+
+    private static void ResetSpawnedPointsToNormal(List<AnomalySpawnPoint> spawnedPoints)
+    {
+        if (spawnedPoints == null)
+        {
+            return;
+        }
+
+        for (var index = 0; index < spawnedPoints.Count; index++)
+        {
+            var point = spawnedPoints[index];
+            if (point != null)
+            {
+                point.SpawnNormal();
+            }
         }
     }
 

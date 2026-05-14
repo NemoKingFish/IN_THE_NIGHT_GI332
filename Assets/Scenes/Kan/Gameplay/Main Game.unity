@@ -45430,7 +45430,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 410702621782902066, guid: d8c1488439556484fae41cd0a4e8949a, type: 3}
       propertyPath: anomalyID
-      value: 15
+      value: 16
       objectReference: {fileID: 0}
     - target: {fileID: 774670185800815728, guid: d8c1488439556484fae41cd0a4e8949a, type: 3}
       propertyPath: m_LocalPosition.x
@@ -45474,43 +45474,43 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 933183530846837283, guid: d8c1488439556484fae41cd0a4e8949a, type: 3}
       propertyPath: anomalyID
-      value: 14
+      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 2269279936660415670, guid: d8c1488439556484fae41cd0a4e8949a, type: 3}
       propertyPath: anomalyID
-      value: 24
+      value: 25
       objectReference: {fileID: 0}
     - target: {fileID: 3554057472278606544, guid: d8c1488439556484fae41cd0a4e8949a, type: 3}
       propertyPath: anomalyID
-      value: 21
+      value: 22
       objectReference: {fileID: 0}
     - target: {fileID: 3728595875713566275, guid: d8c1488439556484fae41cd0a4e8949a, type: 3}
       propertyPath: anomalyID
-      value: 19
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 4112030311065341185, guid: d8c1488439556484fae41cd0a4e8949a, type: 3}
       propertyPath: anomalyID
-      value: 20
+      value: 21
       objectReference: {fileID: 0}
     - target: {fileID: 4423528566467272337, guid: d8c1488439556484fae41cd0a4e8949a, type: 3}
       propertyPath: anomalyID
-      value: 13
+      value: 14
       objectReference: {fileID: 0}
     - target: {fileID: 4635663191643559694, guid: d8c1488439556484fae41cd0a4e8949a, type: 3}
       propertyPath: anomalyID
-      value: 18
+      value: 19
       objectReference: {fileID: 0}
     - target: {fileID: 4719576749321637070, guid: d8c1488439556484fae41cd0a4e8949a, type: 3}
       propertyPath: anomalyID
-      value: 16
+      value: 17
       objectReference: {fileID: 0}
     - target: {fileID: 5033139312505489796, guid: d8c1488439556484fae41cd0a4e8949a, type: 3}
       propertyPath: anomalyID
-      value: 22
+      value: 23
       objectReference: {fileID: 0}
     - target: {fileID: 6073449193785922435, guid: d8c1488439556484fae41cd0a4e8949a, type: 3}
       propertyPath: anomalyID
-      value: 12
+      value: 13
       objectReference: {fileID: 0}
     - target: {fileID: 6514011689923514088, guid: d8c1488439556484fae41cd0a4e8949a, type: 3}
       propertyPath: m_Name
@@ -45518,11 +45518,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6646165582682094929, guid: d8c1488439556484fae41cd0a4e8949a, type: 3}
       propertyPath: anomalyID
-      value: 23
+      value: 24
       objectReference: {fileID: 0}
     - target: {fileID: 7118559511703205758, guid: d8c1488439556484fae41cd0a4e8949a, type: 3}
       propertyPath: anomalyID
-      value: 17
+      value: 18
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -65384,11 +65384,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 718470398386904910, guid: dd5d7c1223a5bb543a0ef8ada8536d8a, type: 3}
       propertyPath: anomalyID
-      value: 4
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 964060589748395350, guid: dd5d7c1223a5bb543a0ef8ada8536d8a, type: 3}
       propertyPath: anomalyID
-      value: 11
+      value: 12
       objectReference: {fileID: 0}
     - target: {fileID: 1174818308733928377, guid: dd5d7c1223a5bb543a0ef8ada8536d8a, type: 3}
       propertyPath: m_Name
@@ -65400,15 +65400,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2628682790161877897, guid: dd5d7c1223a5bb543a0ef8ada8536d8a, type: 3}
       propertyPath: anomalyID
-      value: 9
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 2980899635672114938, guid: dd5d7c1223a5bb543a0ef8ada8536d8a, type: 3}
       propertyPath: anomalyID
-      value: 8
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 3717519596707198700, guid: dd5d7c1223a5bb543a0ef8ada8536d8a, type: 3}
       propertyPath: anomalyID
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 4404004472285420358, guid: dd5d7c1223a5bb543a0ef8ada8536d8a, type: 3}
       propertyPath: m_LocalPosition.x
@@ -65452,27 +65452,27 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4565379024907374360, guid: dd5d7c1223a5bb543a0ef8ada8536d8a, type: 3}
       propertyPath: anomalyID
-      value: 2
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 4974091704053853344, guid: dd5d7c1223a5bb543a0ef8ada8536d8a, type: 3}
       propertyPath: anomalyID
-      value: 7
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 6012083542317762326, guid: dd5d7c1223a5bb543a0ef8ada8536d8a, type: 3}
       propertyPath: anomalyID
-      value: 5
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 8021644611713388910, guid: dd5d7c1223a5bb543a0ef8ada8536d8a, type: 3}
       propertyPath: anomalyID
-      value: 6
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 8182249880225552160, guid: dd5d7c1223a5bb543a0ef8ada8536d8a, type: 3}
       propertyPath: anomalyID
-      value: 10
+      value: 11
       objectReference: {fileID: 0}
     - target: {fileID: 8654193658431787305, guid: dd5d7c1223a5bb543a0ef8ada8536d8a, type: 3}
       propertyPath: anomalyID
-      value: 3
+      value: 4
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -105368,6 +105368,7 @@ GameObject:
   - component: {fileID: 1426525233}
   - component: {fileID: 1426525232}
   - component: {fileID: 1426525231}
+  - component: {fileID: 1426525234}
   m_Layer: 0
   m_Name: d (19)
   m_TagString: Untagged
@@ -105468,6 +105469,51 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1426525229}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &1426525234
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1426525229}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45998f9b92adb6c47838ff95d0dc90f0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AnomalySpawnPoint
+  preferSceneObjectAsNormal: 1
+  normalPrefab: {fileID: 0}
+  anomalyPrefab: {fileID: 0}
+  anomalyID: 40
+  anomalyName: d (19)
+  assignedAnomalyType: 1
+  assignedAnomalyTypes: 01000000
+  anomalyPhase: 1
+  anomalyChance: 5
+  uniqueAnomaly: 1
+  anomalyBehaviour: {fileID: 0}
+  movedLocalPositionOffset: {x: 0, y: 0, z: 0}
+  movedLocalEulerOffset: {x: 0, y: 0, z: 0}
+  overrideChangedObjectScale: 0
+  changedObjectScaleMultiplier: {x: 1, y: 1, z: 1}
+  overrideChangedObjectColor: 0
+  changedObjectColor: {r: 1, g: 1, b: 1, a: 1}
+  normalAudioSettings:
+    enabled: 0
+    clip: {fileID: 0}
+    volume: 1
+    minDistance: 1
+    maxDistance: 12
+    loop: 1
+  anomalyAudioSettings:
+    enabled: 0
+    clip: {fileID: 0}
+    volume: 1
+    minDistance: 1
+    maxDistance: 12
+    loop: 1
+  previewAnomalyInEditMode: 0
+  previewAssignedAnomalyTypeIndex: 0
 --- !u!1001 &1428185178
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -120904,15 +120950,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1586220256343144053, guid: d4e34bc47ee24df4684efad121751ffb, type: 3}
       propertyPath: anomalyID
-      value: 25
+      value: 26
       objectReference: {fileID: 0}
     - target: {fileID: 3118055885686317876, guid: d4e34bc47ee24df4684efad121751ffb, type: 3}
       propertyPath: anomalyID
-      value: 29
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 3235321529424102835, guid: d4e34bc47ee24df4684efad121751ffb, type: 3}
       propertyPath: anomalyID
-      value: 36
+      value: 37
       objectReference: {fileID: 0}
     - target: {fileID: 3501681896963314043, guid: d4e34bc47ee24df4684efad121751ffb, type: 3}
       propertyPath: m_LocalPosition.x
@@ -120956,7 +121002,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3686266716452284760, guid: d4e34bc47ee24df4684efad121751ffb, type: 3}
       propertyPath: anomalyID
-      value: 28
+      value: 29
       objectReference: {fileID: 0}
     - target: {fileID: 4272666905390669836, guid: d4e34bc47ee24df4684efad121751ffb, type: 3}
       propertyPath: m_Name
@@ -120964,31 +121010,31 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4797949438650341022, guid: d4e34bc47ee24df4684efad121751ffb, type: 3}
       propertyPath: anomalyID
-      value: 38
+      value: 39
       objectReference: {fileID: 0}
     - target: {fileID: 5892177985738735061, guid: d4e34bc47ee24df4684efad121751ffb, type: 3}
       propertyPath: anomalyID
-      value: 32
+      value: 33
       objectReference: {fileID: 0}
     - target: {fileID: 6511396740625897423, guid: d4e34bc47ee24df4684efad121751ffb, type: 3}
       propertyPath: anomalyID
-      value: 27
+      value: 28
       objectReference: {fileID: 0}
     - target: {fileID: 6647878884631419293, guid: d4e34bc47ee24df4684efad121751ffb, type: 3}
       propertyPath: anomalyID
-      value: 30
+      value: 31
       objectReference: {fileID: 0}
     - target: {fileID: 6654595824737706795, guid: d4e34bc47ee24df4684efad121751ffb, type: 3}
       propertyPath: anomalyID
-      value: 35
+      value: 36
       objectReference: {fileID: 0}
     - target: {fileID: 7214868030333599292, guid: d4e34bc47ee24df4684efad121751ffb, type: 3}
       propertyPath: anomalyID
-      value: 33
+      value: 34
       objectReference: {fileID: 0}
     - target: {fileID: 7220404031742379078, guid: d4e34bc47ee24df4684efad121751ffb, type: 3}
       propertyPath: anomalyID
-      value: 26
+      value: 27
       objectReference: {fileID: 0}
     - target: {fileID: 7220404031742379078, guid: d4e34bc47ee24df4684efad121751ffb, type: 3}
       propertyPath: previewAnomalyInEditMode
@@ -120996,15 +121042,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7425866684178728779, guid: d4e34bc47ee24df4684efad121751ffb, type: 3}
       propertyPath: anomalyID
-      value: 37
+      value: 38
       objectReference: {fileID: 0}
     - target: {fileID: 8804396527426314447, guid: d4e34bc47ee24df4684efad121751ffb, type: 3}
       propertyPath: anomalyID
-      value: 31
+      value: 32
       objectReference: {fileID: 0}
     - target: {fileID: 9199080124887251776, guid: d4e34bc47ee24df4684efad121751ffb, type: 3}
       propertyPath: anomalyID
-      value: 34
+      value: 35
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -155019,6 +155065,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 2303710355904876483, guid: 4d66487cc0a8b8844901b094f3c34726, type: 3}
       insertIndex: -1
       addedObject: {fileID: 4914006691418022627}
+    - targetCorrespondingSourceObject: {fileID: 2303710355904876483, guid: 4d66487cc0a8b8844901b094f3c34726, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4914006691418022628}
   m_SourcePrefab: {fileID: 100100000, guid: 4d66487cc0a8b8844901b094f3c34726, type: 3}
 --- !u!1 &4914006691418022625 stripped
 GameObject:
@@ -155049,6 +155098,51 @@ MonoBehaviour:
   openLocalEulerAngles: {x: 0, y: 0, z: 0}
   disableCollidersWhenOpen: 1
   previewOpenInEditMode: 0
+--- !u!114 &4914006691418022628
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4914006691418022625}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45998f9b92adb6c47838ff95d0dc90f0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AnomalySpawnPoint
+  preferSceneObjectAsNormal: 1
+  normalPrefab: {fileID: 0}
+  anomalyPrefab: {fileID: 0}
+  anomalyID: 1
+  anomalyName: Door Phase3 Group
+  assignedAnomalyType: 0
+  assignedAnomalyTypes: 
+  anomalyPhase: 1
+  anomalyChance: 10
+  uniqueAnomaly: 1
+  anomalyBehaviour: {fileID: 0}
+  movedLocalPositionOffset: {x: 0, y: 0, z: 0}
+  movedLocalEulerOffset: {x: 0, y: 0, z: 0}
+  overrideChangedObjectScale: 0
+  changedObjectScaleMultiplier: {x: 1, y: 1, z: 1}
+  overrideChangedObjectColor: 0
+  changedObjectColor: {r: 1, g: 1, b: 1, a: 1}
+  normalAudioSettings:
+    enabled: 0
+    clip: {fileID: 0}
+    volume: 1
+    minDistance: 1
+    maxDistance: 12
+    loop: 1
+  anomalyAudioSettings:
+    enabled: 0
+    clip: {fileID: 0}
+    volume: 1
+    minDistance: 1
+    maxDistance: 12
+    loop: 1
+  previewAnomalyInEditMode: 0
+  previewAssignedAnomalyTypeIndex: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

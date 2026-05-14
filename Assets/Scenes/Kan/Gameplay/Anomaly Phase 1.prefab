@@ -59,6 +59,8 @@ MonoBehaviour:
   assignedAnomalyTypes: 01000000
   anomalyPhase: 1
   anomalyChance: 50
+  uniqueAnomaly: 0
+  anomalyBehaviour: {fileID: 0}
   movedLocalPositionOffset: {x: 0, y: 0, z: 0}
   movedLocalEulerOffset: {x: 0, y: 0, z: 0}
   overrideChangedObjectScale: 0
@@ -188,6 +190,8 @@ MonoBehaviour:
   assignedAnomalyTypes: 01000000
   anomalyPhase: 1
   anomalyChance: 50
+  uniqueAnomaly: 0
+  anomalyBehaviour: {fileID: 0}
   movedLocalPositionOffset: {x: 0, y: 0, z: 0}
   movedLocalEulerOffset: {x: 0, y: 0, z: 0}
   overrideChangedObjectScale: 0
@@ -265,6 +269,8 @@ MonoBehaviour:
   assignedAnomalyTypes: 03000000
   anomalyPhase: 1
   anomalyChance: 30
+  uniqueAnomaly: 0
+  anomalyBehaviour: {fileID: 0}
   movedLocalPositionOffset: {x: 0, y: 0, z: 0}
   movedLocalEulerOffset: {x: 0, y: 0, z: 0}
   overrideChangedObjectScale: 0
@@ -346,6 +352,8 @@ MonoBehaviour:
   assignedAnomalyTypes: 01000000
   anomalyPhase: 1
   anomalyChance: 50
+  uniqueAnomaly: 0
+  anomalyBehaviour: {fileID: 0}
   movedLocalPositionOffset: {x: 0, y: 0, z: 0}
   movedLocalEulerOffset: {x: 0, y: 0, z: 0}
   overrideChangedObjectScale: 0
@@ -424,6 +432,8 @@ MonoBehaviour:
   assignedAnomalyTypes: 01000000
   anomalyPhase: 1
   anomalyChance: 30
+  uniqueAnomaly: 0
+  anomalyBehaviour: {fileID: 0}
   movedLocalPositionOffset: {x: 0, y: 0, z: 0}
   movedLocalEulerOffset: {x: 0, y: 0, z: 0}
   overrideChangedObjectScale: 0
@@ -502,6 +512,8 @@ MonoBehaviour:
   assignedAnomalyTypes: 01000000
   anomalyPhase: 1
   anomalyChance: 20
+  uniqueAnomaly: 0
+  anomalyBehaviour: {fileID: 0}
   movedLocalPositionOffset: {x: 0, y: 0, z: 0}
   movedLocalEulerOffset: {x: 0, y: 0, z: 0}
   overrideChangedObjectScale: 0
@@ -582,6 +594,8 @@ MonoBehaviour:
   assignedAnomalyTypes: 04000000
   anomalyPhase: 1
   anomalyChance: 30
+  uniqueAnomaly: 0
+  anomalyBehaviour: {fileID: 0}
   movedLocalPositionOffset: {x: 0, y: 0, z: 0}
   movedLocalEulerOffset: {x: 0, y: 0, z: 0}
   overrideChangedObjectScale: 0
@@ -707,6 +721,8 @@ MonoBehaviour:
   assignedAnomalyTypes: 07000000
   anomalyPhase: 1
   anomalyChance: 50
+  uniqueAnomaly: 0
+  anomalyBehaviour: {fileID: 0}
   movedLocalPositionOffset: {x: 0, y: 0, z: 0}
   movedLocalEulerOffset: {x: 0, y: 0, z: 0}
   overrideChangedObjectScale: 0
@@ -957,6 +973,8 @@ MonoBehaviour:
   assignedAnomalyTypes: 03000000
   anomalyPhase: 1
   anomalyChance: 50
+  uniqueAnomaly: 0
+  anomalyBehaviour: {fileID: 0}
   movedLocalPositionOffset: {x: 0, y: 0, z: 0}
   movedLocalEulerOffset: {x: 0, y: 0, z: 0}
   overrideChangedObjectScale: 0
@@ -1399,6 +1417,8 @@ MonoBehaviour:
   assignedAnomalyTypes: 02000000
   anomalyPhase: 1
   anomalyChance: 50
+  uniqueAnomaly: 0
+  anomalyBehaviour: {fileID: 0}
   movedLocalPositionOffset: {x: 66.04, y: 0, z: 0}
   movedLocalEulerOffset: {x: 0, y: 0, z: 0}
   overrideChangedObjectScale: 0
@@ -1982,6 +2002,8 @@ MonoBehaviour:
   assignedAnomalyTypes: 02000000
   anomalyPhase: 1
   anomalyChance: 30
+  uniqueAnomaly: 0
+  anomalyBehaviour: {fileID: 0}
   movedLocalPositionOffset: {x: 23.1, y: 0.07, z: -35.85}
   movedLocalEulerOffset: {x: 1.2, y: -10.2, z: 0}
   overrideChangedObjectScale: 0
