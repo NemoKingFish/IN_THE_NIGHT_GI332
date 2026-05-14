@@ -75,6 +75,7 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
     private Button joinPasswordConfirmButton;
     private Button joinPasswordCancelButton;
     private bool pendingReturnToMainMenu;
+    private bool pendingLobbyRefresh;
 
     private void Start()
     {
@@ -113,9 +114,18 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
 
     public override void OnJoinedLobby()
     {
+        pendingLobbyRefresh = false;
         SetStatus("Lobby ready.");
         RefreshConnectionSummaryUi();
         RefreshRoomList();
+    }
+
+    public override void OnLeftLobby()
+    {
+        if (pendingLobbyRefresh && PhotonNetwork.IsConnectedAndReady && !PhotonNetwork.InRoom)
+        {
+            PhotonNetwork.JoinLobby(SharedLobby);
+        }
     }
 
     public override void OnCreatedRoom()
@@ -514,6 +524,16 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
     {
         if (PhotonNetwork.IsConnected)
         {
+            if (PhotonNetwork.IsConnectedAndReady && PhotonNetwork.InLobby && !PhotonNetwork.InRoom)
+            {
+                pendingLobbyRefresh = true;
+                cachedRooms.Clear();
+                selectedRoom = null;
+                RefreshRoomList();
+                PhotonNetwork.LeaveLobby();
+                return;
+            }
+
             if (PhotonNetwork.IsConnectedAndReady && !PhotonNetwork.InLobby && !PhotonNetwork.InRoom)
             {
                 PhotonNetwork.JoinLobby(SharedLobby);

@@ -264,6 +264,12 @@ public class SoundManager : MonoBehaviour
         ResolveMusicSources();
         ResolveDefaultTracks();
 
+        if (IsAnyMusicSourcePlaying())
+        {
+            NormalizeCurrentPlaybackState();
+            return;
+        }
+
         if (playMusicOnStart && hasStartedMusicPlayback && bgmTracks != null && bgmTracks.Length > 0)
         {
             var clampedIndex = Mathf.Clamp(currentTrackIndex >= 0 ? currentTrackIndex : defaultTrackIndex, 0, bgmTracks.Length - 1);
@@ -528,6 +534,19 @@ public class SoundManager : MonoBehaviour
         var dominantSource = primaryBlend >= secondaryBlend ? musicSource : secondaryMusicSource;
         var secondarySource = dominantSource == musicSource ? secondaryMusicSource : musicSource;
 
+        if (musicSource != null && musicSource.isPlaying && secondaryMusicSource != null && secondaryMusicSource.isPlaying)
+        {
+            var preferredSource = activeMusicSource != null && activeMusicSource.isPlaying
+                ? activeMusicSource
+                : dominantSource;
+            var sourceToStop = preferredSource == musicSource ? secondaryMusicSource : musicSource;
+
+            activeMusicSource = preferredSource;
+            SetSourceBlend(preferredSource, Mathf.Max(GetSourceBlend(preferredSource), 1f));
+            StopAndResetSource(sourceToStop);
+            return;
+        }
+
         if (dominantSource != null && dominantSource.isPlaying)
         {
             activeMusicSource = dominantSource;
@@ -553,8 +572,9 @@ public class SoundManager : MonoBehaviour
             ResolveMusicSources();
         }
 
-        if (activeMusicSource != null && activeMusicSource.isPlaying)
+        if (IsAnyMusicSourcePlaying())
         {
+            NormalizeCurrentPlaybackState();
             return;
         }
 
@@ -602,6 +622,12 @@ public class SoundManager : MonoBehaviour
         }
 
         return sequentialIndex;
+    }
+
+    private bool IsAnyMusicSourcePlaying()
+    {
+        return (musicSource != null && musicSource.isPlaying)
+            || (secondaryMusicSource != null && secondaryMusicSource.isPlaying);
     }
 
     private void StopAndResetSource(AudioSource source)
