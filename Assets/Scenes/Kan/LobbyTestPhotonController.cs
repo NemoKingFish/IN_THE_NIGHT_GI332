@@ -7,6 +7,7 @@ using Photon.Pun;
 using Photon.Realtime;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using PhotonHashtable = ExitGames.Client.Photon.Hashtable;
 
@@ -26,6 +27,7 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
     [SerializeField] private string devRegion = "asia";
     [SerializeField] private byte maxPlayersPerRoom = 4;
     [SerializeField] private LobbySceneTargetReference sceneTargetReference;
+    [SerializeField] private string mainMenuSceneName = "Menu";
 
     [Header("Lobby UI")]
     [SerializeField] private TMP_InputField createLobbyNameInput;
@@ -72,6 +74,7 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
     private TMP_InputField joinPasswordInput;
     private Button joinPasswordConfirmButton;
     private Button joinPasswordCancelButton;
+    private bool pendingReturnToMainMenu;
 
     private void Start()
     {
@@ -95,6 +98,7 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
 
     private void Update()
     {
+        HandleMainMenuEscapeInput();
         UpdateCreateButtonState();
         UpdateConnectButtonState();
         UpdateLobbyForegroundVisibility();
@@ -158,12 +162,64 @@ public class LobbyTestPhotonController : MonoBehaviourPunCallbacks
 
     public override void OnLeftRoom()
     {
+        if (pendingReturnToMainMenu)
+        {
+            pendingReturnToMainMenu = false;
+            TryLoadMainMenuScene();
+            return;
+        }
+
         if (PhotonNetwork.IsConnectedAndReady && !PhotonNetwork.InLobby)
         {
             PhotonNetwork.JoinLobby(SharedLobby);
         }
 
         RefreshAllUi();
+    }
+
+    private void HandleMainMenuEscapeInput()
+    {
+        if (!Input.GetKeyDown(KeyCode.Escape))
+        {
+            return;
+        }
+
+        ReturnToMainMenu();
+    }
+
+    private void ReturnToMainMenu()
+    {
+        CloseJoinPasswordPanel();
+        CloseCreateRoomPanel();
+
+        if (PhotonNetwork.InRoom)
+        {
+            pendingReturnToMainMenu = true;
+            PhotonNetwork.LeaveRoom(false);
+            return;
+        }
+
+        TryLoadMainMenuScene();
+    }
+
+    private void TryLoadMainMenuScene()
+    {
+        if (string.IsNullOrWhiteSpace(mainMenuSceneName))
+        {
+            Debug.LogWarning("[LobbyTestPhotonController] No main menu scene assigned for Escape return.");
+            return;
+        }
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        if (Application.CanStreamedLevelBeLoaded(mainMenuSceneName))
+        {
+            SceneManager.LoadScene(mainMenuSceneName);
+            return;
+        }
+
+        Debug.LogWarning($"[LobbyTestPhotonController] Scene '{mainMenuSceneName}' is not available to load.");
     }
 
     public override void OnCreateRoomFailed(short returnCode, string message)

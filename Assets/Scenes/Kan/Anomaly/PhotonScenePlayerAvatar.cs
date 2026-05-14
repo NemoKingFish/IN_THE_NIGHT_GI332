@@ -19,6 +19,7 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
     [SerializeField] private float footstepMinSpeed = 0.2f;
     [Range(0f, 1f)] [SerializeField] private float footstepVolume = 0.35f;
     [Range(0f, 1f)] [SerializeField] private float sprintFootstepVolumeMultiplier = 0.75f;
+    [Range(0f, 0.2f)] [SerializeField] private float footstepReplayPadding = 0.03f;
 
     [Header("Look")]
     [SerializeField] private float mouseSensitivity = 2.2f;
@@ -51,6 +52,7 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
     private Vector3 lastAnimationSamplePosition;
     private float sampledHorizontalSpeed;
     private float footstepTimer;
+    private float nextFootstepAllowedTime;
 
     public int OwnerActorNumber => ownerActorNumber;
     public bool IsLocalPlayer => isLocalPlayer;
@@ -142,6 +144,8 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
         SnapToGround();
         lastAnimationSamplePosition = transform.position;
         sampledHorizontalSpeed = 0f;
+        footstepTimer = Random.Range(0f, 0.12f);
+        nextFootstepAllowedTime = 0f;
 
         if (nameLabel != null)
         {
@@ -204,6 +208,8 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
         remoteTargetPitch = lookPitch;
         lastAnimationSamplePosition = transform.position;
         sampledHorizontalSpeed = 0f;
+        footstepTimer = Random.Range(0f, 0.12f);
+        nextFootstepAllowedTime = 0f;
     }
 
     private void UpdateLocalMovement()
@@ -339,6 +345,16 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
             return;
         }
 
+        if (Time.time < nextFootstepAllowedTime)
+        {
+            return;
+        }
+
+        if (footstepAudioSource.isPlaying)
+        {
+            return;
+        }
+
         footstepTimer += Time.deltaTime;
         var targetInterval = Mathf.Max(0.05f, isSprinting ? sprintStepInterval : walkStepInterval);
         if (footstepTimer < targetInterval)
@@ -356,6 +372,7 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
         footstepAudioSource.pitch = isSprinting ? 1.08f : 1f;
         var stepVolume = footstepVolume * (isSprinting ? sprintFootstepVolumeMultiplier : 1f);
         footstepAudioSource.PlayOneShot(clip, Mathf.Clamp01(stepVolume));
+        nextFootstepAllowedTime = Time.time + GetFootstepReplayDelay(clip, footstepAudioSource.pitch, targetInterval);
     }
 
     private bool IsGrounded()
@@ -517,6 +534,18 @@ public class PhotonScenePlayerAvatar : MonoBehaviour
                 sprintFootstepClips = new[] { sprintClip };
             }
         }
+    }
+
+    private float GetFootstepReplayDelay(AudioClip clip, float pitch, float fallbackInterval)
+    {
+        if (clip == null)
+        {
+            return Mathf.Max(0.05f, fallbackInterval);
+        }
+
+        var adjustedPitch = Mathf.Max(0.01f, pitch);
+        var clipDuration = clip.length / adjustedPitch;
+        return Mathf.Max(fallbackInterval, clipDuration + Mathf.Max(0f, footstepReplayPadding));
     }
 
     private void SnapToGround()

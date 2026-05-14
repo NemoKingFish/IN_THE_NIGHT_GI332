@@ -56490,15 +56490,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8249352470020966626, guid: 6b2793ed3edc0a8488890b94960baae1, type: 3}
       propertyPath: phaseOneAnomalySpawnSettings.emptyRoomChance
-      value: 50
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 8249352470020966626, guid: 6b2793ed3edc0a8488890b94960baae1, type: 3}
       propertyPath: phaseOneAnomalySpawnSettings.maxAnomalyCount
-      value: 3
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 8249352470020966626, guid: 6b2793ed3edc0a8488890b94960baae1, type: 3}
       propertyPath: phaseTwoAnomalySpawnSettings.emptyRoomChance
-      value: 50
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 8249352470020966626, guid: 6b2793ed3edc0a8488890b94960baae1, type: 3}
       propertyPath: phaseTwoAnomalySpawnSettings.maxAnomalyCount
@@ -56506,7 +56506,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8249352470020966626, guid: 6b2793ed3edc0a8488890b94960baae1, type: 3}
       propertyPath: phaseThreeAnomalySpawnSettings.emptyRoomChance
-      value: 50
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8249352470020966626, guid: 6b2793ed3edc0a8488890b94960baae1, type: 3}
+      propertyPath: phaseThreeAnomalySpawnSettings.maxAnomalyCount
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 8249352470020966626, guid: 6b2793ed3edc0a8488890b94960baae1, type: 3}
       propertyPath: phaseThreeAnomalySpawnSettings.minAnomalyCount

@@ -92,6 +92,11 @@ public class SoundManager : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        AdvancePlaylistWhenTrackEnds();
+    }
+
     private void OnDestroy()
     {
         if (instance == this)
@@ -330,7 +335,7 @@ public class SoundManager : MonoBehaviour
         }
 
         source.playOnAwake = false;
-        source.loop = true;
+        source.loop = false;
         source.spatialBlend = 0f;
         source.volume = 0f;
     }
@@ -408,34 +413,24 @@ public class SoundManager : MonoBehaviour
         {
             StopCoroutine(musicTransitionRoutine);
             musicTransitionRoutine = null;
-            NormalizeCurrentPlaybackState();
         }
 
-        var nextSource = activeMusicSource == musicSource ? secondaryMusicSource : musicSource;
+        StopAndResetSource(musicSource);
+        StopAndResetSource(secondaryMusicSource);
+
+        var nextSource = musicSource != null ? musicSource : secondaryMusicSource;
         if (nextSource == null)
         {
             return;
         }
 
         nextSource.clip = track.clip;
+        nextSource.time = 0f;
         nextSource.Play();
-
-        if (instant || activeMusicSource == null || !activeMusicSource.isPlaying)
-        {
-            StopAndResetSource(activeMusicSource != nextSource ? activeMusicSource : null);
-            StopAndResetSource(nextSource == musicSource ? secondaryMusicSource : musicSource);
-
-            activeMusicSource = nextSource;
-            currentTrackIndex = index;
-            SetSourceBlend(nextSource, Mathf.Clamp01(track.volume));
-            return;
-        }
-
-        var previousSource = activeMusicSource;
-        SetSourceBlend(nextSource, 0f);
         activeMusicSource = nextSource;
         currentTrackIndex = index;
-        musicTransitionRoutine = StartCoroutine(CrossfadeMusicRoutine(previousSource, nextSource, Mathf.Max(0.05f, crossfadeDuration), Mathf.Clamp01(track.volume)));
+        SetSourceBlend(nextSource, Mathf.Clamp01(track.volume));
+        SetSourceBlend(nextSource == musicSource ? secondaryMusicSource : musicSource, 0f);
     }
 
     private IEnumerator CrossfadeMusicRoutine(AudioSource fromSource, AudioSource toSource, float duration, float targetBlend)
@@ -539,6 +534,74 @@ public class SoundManager : MonoBehaviour
         }
 
         StopAndResetSource(secondarySource);
+    }
+
+    private void AdvancePlaylistWhenTrackEnds()
+    {
+        if (!hasStartedMusicPlayback || bgmTracks == null || bgmTracks.Length == 0)
+        {
+            return;
+        }
+
+        if (musicTransitionRoutine != null)
+        {
+            return;
+        }
+
+        if (activeMusicSource == null)
+        {
+            ResolveMusicSources();
+        }
+
+        if (activeMusicSource != null && activeMusicSource.isPlaying)
+        {
+            return;
+        }
+
+        var nextIndex = GetNextTrackIndex();
+        if (nextIndex < 0)
+        {
+            return;
+        }
+
+        PlayMusicTrack(nextIndex, true);
+    }
+
+    private int GetNextTrackIndex()
+    {
+        if (bgmTracks == null || bgmTracks.Length == 0)
+        {
+            return -1;
+        }
+
+        if (musicPlaybackMode == MusicPlaybackMode.Random)
+        {
+            if (bgmTracks.Length == 1)
+            {
+                return loopPlaylist || currentTrackIndex < 0 ? 0 : -1;
+            }
+
+            if (!loopPlaylist && currentTrackIndex >= bgmTracks.Length - 1)
+            {
+                return -1;
+            }
+
+            var nextIndex = currentTrackIndex;
+            while (nextIndex == currentTrackIndex)
+            {
+                nextIndex = Random.Range(0, bgmTracks.Length);
+            }
+
+            return nextIndex;
+        }
+
+        var sequentialIndex = currentTrackIndex + 1;
+        if (sequentialIndex >= bgmTracks.Length)
+        {
+            return loopPlaylist ? 0 : -1;
+        }
+
+        return sequentialIndex;
     }
 
     private void StopAndResetSource(AudioSource source)
